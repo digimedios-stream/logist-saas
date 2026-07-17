@@ -1,0 +1,247 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Default: Dark mode */
+    --slate-50: 248 250 252;
+    --slate-100: 241 245 249;
+    --slate-200: 226 232 240;
+    --slate-300: 203 213 225;
+    --slate-400: 148 163 184;
+    --slate-500: 100 116 139;
+    --slate-600: 71 85 105;
+    --slate-700: 51 65 85;
+    --slate-800: 30 41 59;
+    --slate-900: 15 23 42;
+    --slate-950: 2 6 23;
+    --white: 255 255 255;
+    --black: 0 0 0;
+
+    /* Lazdin dark */
+    --lazdin-bg: 11 19 38;
+    --lazdin-surface: 23 31 51;
+    --lazdin-surface-high: 34 42 61;
+    --lazdin-surface-highest: 45 52 73;
+    --lazdin-surface-low: 19 27 46;
+    --lazdin-surface-lowest: 6 14 32;
+    --lazdin-primary-container: 30 41 59;
+    --lazdin-emerald: 78 222 163;
+    --lazdin-emerald-dark: 0 48 30;
+    --lazdin-emerald-container: 0 82 54;
+    --lazdin-blue: 165 202 244;
+    --lazdin-blue-container: 34 73 109;
+    --lazdin-orange: 249 115 22;
+    --lazdin-orange-light: 251 146 60;
+    --lazdin-orange-dark: 194 65 12;
+    --lazdin-outline: 143 144 151;
+    --lazdin-outline-variant: 69 71 76;
+    --lazdin-on-surface: 218 226 253;
+    --lazdin-on-surface-variant: 197 198 205;
+    --lazdin-on-primary-container: 133 144 166;
+    --lazdin-error: 255 180 171;
+    --lazdin-error-container: 147 0 10;
+
+    /* Tailwind Base */
+    --background: 222 56% 10%;
+    --foreground: 226 90% 93%;
+    --card: 223 38% 14%;
+    --card-foreground: 226 90% 93%;
+    --popover: 223 38% 14%;
+    --popover-foreground: 226 90% 93%;
+    --primary: 164 65% 59%;
+    --primary-foreground: 160 100% 11%;
+    --secondary: 212 82% 81%;
+    --secondary-foreground: 209 100% 10%;
+    --muted: 222 25% 23%;
+    --muted-foreground: 230 5% 77%;
+    --accent: 222 25% 23%;
+    --accent-foreground: 226 90% 93%;
+    --destructive: 10 76% 84%;
+    --destructive-foreground: 0 72% 29%;
+    --border: 225 7% 28%;
+    --input: 225 7% 28%;
+    --ring: 164 65% 59%;
+    --radius: 0.5rem;
+  }
+
+  :root[data-theme="light"] {
+    /* Light mode */
+    --slate-50: 15 23 42;
+    --slate-100: 30 41 59;
+    --slate-200: 51 65 85;
+    --slate-300: 71 85 105;
+    --slate-400: 100 116 139;
+    --slate-500: 148 163 184;
+    --slate-600: 203 213 225;
+    --slate-700: 226 232 240;
+    --slate-800: 241 245 249;
+    --slate-900: 248 250 252;
+    --slate-950: 255 255 255;
+    --white: 15 23 42;
+    --black: 255 255 255;
+    
+    /* Lazdin light */
+    --lazdin-bg: 248 250 252;
+    --lazdin-surface: 255 255 255;
+    --lazdin-surface-high: 241 245 249;
+    --lazdin-surface-highest: 226 232 240;
+    --lazdin-surface-low: 255 255 255;
+    --lazdin-surface-lowest: 255 255 255;
+    --lazdin-primary-container: 226 232 240;
+    --lazdin-emerald: 16 185 129;
+    --lazdin-emerald-dark: 209 250 229;
+    --lazdin-emerald-container: 167 243 208;
+    --lazdin-blue: 59 130 246;
+    --lazdin-blue-container: 219 234 254;
+    --lazdin-orange: 249 115 22;
+    --lazdin-orange-light: 234 88 12;
+    --lazdin-orange-dark: 255 237 213;
+    --lazdin-outline: 148 163 184;
+    --lazdin-outline-variant: 203 213 225;
+    --lazdin-on-surface: 15 23 42;
+    --lazdin-on-surface-variant: 71 85 105;
+    --lazdin-on-primary-container: 51 65 85;
+    --lazdin-error: 239 68 68;
+    --lazdin-error-container: 254 226 226;
+
+    /* Tailwind Base Light */
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #0b1326;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #2d3449;
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #45474c;
+  }
+}
+
+@layer components {
+  /* Material Symbols configuration */
+  .material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  }
+  .material-symbols-filled {
+    font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  }
+
+  /* KPI Card hover glow effect */
+  .kpi-card {
+    @apply bg-lazdin-surface border border-lazdin-outline-variant/30 p-6 rounded-xl 
+           hover:shadow-lg transition-all duration-300;
+  }
+  .kpi-card:hover {
+    box-shadow: 0 0 20px rgba(78, 222, 163, 0.05);
+  }
+
+  /* Table row hover */
+  .table-row-hover {
+    @apply hover:bg-lazdin-surface-highest/30 transition-colors duration-150;
+  }
+
+  /* Glass container */
+  .glass-container {
+    @apply bg-lazdin-surface/80 backdrop-blur-xl border border-lazdin-outline-variant/30 
+           rounded-xl shadow-2xl;
+  }
+
+  /* Sidebar nav item */
+  .nav-item {
+    @apply flex items-center gap-3 px-4 py-3 text-lazdin-on-surface-variant 
+           hover:text-lazdin-on-surface hover:bg-slate-800/40 
+           transition-all ease-in-out duration-200 rounded-lg;
+  }
+  .nav-item-active {
+    @apply flex items-center gap-3 px-4 py-3 
+           bg-emerald-500/10 text-emerald-400 border-r-2 border-emerald-500 
+           transition-all ease-in-out duration-200 rounded-lg;
+  }
+
+  /* Badge styles */
+  .badge-propio {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold 
+           bg-emerald-500/10 text-emerald-400;
+  }
+  .badge-tercero {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold 
+           bg-orange-500/10 text-orange-400;
+  }
+  .badge-urgente {
+    @apply px-2 py-0.5 rounded-full bg-red-900/20 text-red-400 text-[10px] font-black uppercase;
+  }
+  .badge-pendiente {
+    @apply px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 text-[10px] font-black uppercase;
+  }
+  .badge-vigente {
+    @apply px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-black uppercase;
+  }
+
+  /* Form field styling */
+  .form-field {
+    @apply w-full bg-lazdin-surface-high border border-lazdin-outline-variant/30 rounded-lg 
+           text-lazdin-on-surface focus:ring-2 focus:ring-lazdin-emerald/50 
+           focus:border-lazdin-emerald py-3 px-4 transition-all placeholder:text-lazdin-outline;
+  }
+  .form-label {
+    @apply text-xs font-semibold text-lazdin-on-primary-container uppercase tracking-widest;
+  }
+
+  /* Action button */
+  .btn-primary {
+    @apply bg-lazdin-emerald hover:bg-emerald-400 text-slate-900 font-bold px-6 py-2.5 
+           rounded-lg flex items-center justify-center gap-2 shadow-lg 
+           shadow-emerald-500/10 active:scale-95 transition-all;
+  }
+  .btn-secondary {
+    @apply bg-lazdin-primary-container hover:bg-lazdin-surface-highest text-lazdin-on-surface 
+           font-bold px-6 py-2.5 rounded-lg flex items-center justify-center gap-2 
+           active:scale-95 transition-all border border-lazdin-outline-variant/20;
+  }
+  .btn-danger {
+    @apply bg-red-900/30 hover:bg-red-900/50 text-red-400 font-bold px-6 py-2.5 
+           rounded-lg flex items-center justify-center gap-2 
+           active:scale-95 transition-all border border-red-500/20;
+  }
+  .btn-orange {
+    @apply bg-lazdin-orange hover:bg-lazdin-orange-light text-white font-bold px-6 py-2.5 
+           rounded-lg flex items-center justify-center gap-2 shadow-lg 
+           shadow-orange-900/20 active:scale-95 transition-all;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  .animate-in {
+    animation: fade-in 0.2s ease-out;
+  }
+}
