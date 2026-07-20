@@ -16,15 +16,48 @@ export default function LogsActividad() {
     setLoading(true)
     setError(null)
     try {
-      // Intentamos con la vista de usuarios, si falla usamos solo los logs
-      const { data, error: logError } = await supabase
+      // 1. Traer los logs (sin join directo porque PostgREST requiere FK directa)
+      const { data: logsData, error: logError } = await supabase
         .from('logs_actividad')
-        .select('*, usuario:user_roles(nombre, rol)')
-        .order('fecha_hora', { ascending: false })
+        .select('*')
+        .order('created_at', { ascending: false })
         .limit(limit)
       
       if (logError) throw logError
-      setLogs(data || [])
+      
+      if (!logsData || logsData.length === 0) {
+        setLogs([])
+        return
+      }
+
+      // 2. Extraer user_ids únicos
+      const userIds = [...new Set(logsData.map(l => l.user_id).filter(Boolean))]
+      
+      let usersMap = {}
+      if (userIds.length > 0) {
+        const { data: usersData, error: usersError } = await supabase
+          .from('user_roles')
+          .select('user_id, nombre, rol')
+          .in('user_id', userIds)
+          
+        if (!usersError && usersData) {
+          usersData.forEach(u => {
+            usersMap[u.user_id] = u
+          })
+        }
+      }
+
+      // 3. Mappear los campos al formato que espera la UI
+      const logsMapeados = logsData.map(log => ({
+        ...log,
+        fecha_hora: log.created_at,
+        entidad_afectada: log.tabla,
+        entidad_id: log.registro_id,
+        detalles: log.metadata,
+        usuario: usersMap[log.user_id] || null
+      }))
+
+      setLogs(logsMapeados)
     } catch (err) {
       console.error('Error cargando logs:', err)
       setError(err.message)

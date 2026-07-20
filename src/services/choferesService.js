@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase'
 export const choferesService = {
   /**
    * Obtiene todos los choferes activos con sus roles y asignaciones de vehículos.
+   * El RLS filtra automáticamente por empresa_id del usuario autenticado.
    */
   getChoferes: async () => {
     const { data, error } = await supabase
@@ -17,7 +18,7 @@ export const choferesService = {
       `)
       .eq('activo', true)
       .order('nombre')
-    
+
     if (error) throw error
     return data
   },
@@ -31,13 +32,14 @@ export const choferesService = {
       .select('*')
       .eq('id', id)
       .single()
-      
+
     if (error) throw error
     return data
   },
 
   /**
    * Crea un nuevo chofer.
+   * @param {Object} choferData - Debe incluir empresa_id (inyectado desde el componente via useEmpresaId)
    */
   createChofer: async (choferData) => {
     const { data, error } = await supabase
@@ -45,7 +47,7 @@ export const choferesService = {
       .insert([choferData])
       .select()
       .single()
-      
+
     if (error) throw error
     return data
   },
@@ -60,7 +62,7 @@ export const choferesService = {
       .eq('id', id)
       .select()
       .single()
-      
+
     if (error) throw error
     return data
   },
@@ -74,15 +76,15 @@ export const choferesService = {
       .from('choferes')
       .update({ activo: false })
       .eq('id', id)
-      
+
     if (deleteError) throw deleteError
 
     // 2. Desactivar su asignación de vehículo si la tiene
     const { error: asignacionError } = await supabase
       .from('asignaciones_vehiculo_chofer')
-      .update({ 
-        activo: false, 
-        fecha_fin: new Date().toISOString().split('T')[0] 
+      .update({
+        activo: false,
+        fecha_fin: new Date().toISOString().split('T')[0]
       })
       .eq('chofer_id', id)
       .eq('activo', true)

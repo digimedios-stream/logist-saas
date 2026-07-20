@@ -14,7 +14,7 @@ const NAV_ITEMS = [
 ]
 
 export default function ChoferLayout() {
-  const { choferData, logout, userRole } = useAuth()
+  const { choferData, logout, userRole, empresaData } = useAuth()
   const { tema, esTercero, nombreMostrar, modoClaro, toggleTemaClaroOscuro } = useTheme()
   const navigate = useNavigate()
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -188,7 +188,7 @@ export default function ChoferLayout() {
       <footer className="md:ml-64 mt-auto pt-8 pb-28 md:pb-8 border-t border-slate-800/50 w-full">
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4">
           <span className="text-xs text-slate-500 italic">
-            {esTercero ? 'Operando como Tercero Autorizado' : 'Logística Lazdin'}
+            {esTercero ? 'Operando como Tercero Autorizado' : (empresaData?.nombre || 'Logística')}
           </span>
           <p className="text-xs text-slate-500 font-medium">© 2026 DigimediosApps — Sistemas de Gestión</p>
         </div>
