@@ -64,7 +64,7 @@ const TEMAS = {
 }
 
 export function ThemeProvider({ children }) {
-  const { isAdmin, isChofer, esTercero, propietarioNombre } = useAuth()
+  const { isAdmin, isChofer, esTercero, propietarioNombre, empresaData } = useAuth()
   
   // Estado para modo claro/oscuro
   const [modoClaro, setModoClaro] = useState(() => {
@@ -88,7 +88,11 @@ export function ThemeProvider({ children }) {
   const toggleTemaClaroOscuro = () => setModoClaro(!modoClaro)
 
   const tema = useMemo(() => {
-    if (isAdmin) return TEMAS.admin
+    const baseName = empresaData?.nombre || 'Logística'
+    
+    if (isAdmin) {
+      return { ...TEMAS.admin, nombre: baseName }
+    }
 
     if (isChofer) {
       if (esTercero) {
@@ -97,12 +101,12 @@ export function ThemeProvider({ children }) {
           nombre: propietarioNombre || 'Tercero',
         }
       }
-      return TEMAS.propio
+      return { ...TEMAS.propio, nombre: baseName }
     }
 
     // Default (no logueado)
-    return TEMAS.admin
-  }, [isAdmin, isChofer, esTercero, propietarioNombre])
+    return { ...TEMAS.admin, nombre: baseName }
+  }, [isAdmin, isChofer, esTercero, propietarioNombre, empresaData])
 
   const value = {
     tema,
