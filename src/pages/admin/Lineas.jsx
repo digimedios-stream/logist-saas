@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/contexts/AuthContext'
 import { formatMoneda } from '@/lib/utils'
 
 export default function LineasPage() {
+  const { empresaData } = useAuth()
   const [lineas, setLineas] = useState([])
   const [todosVehiculos, setTodosVehiculos] = useState([])
   const [loading, setLoading] = useState(true)
@@ -169,7 +171,8 @@ export default function LineasPage() {
         remuneracion_base: rawForm.remuneracion_base ? parseFloat(rawForm.remuneracion_base) : 0,
         horario_salida: rawForm.horario_salida || null,
         horario_regreso: rawForm.horario_regreso || null,
-        activo: rawForm.activo !== undefined ? rawForm.activo : true
+        activo: rawForm.activo !== undefined ? rawForm.activo : true,
+        empresa_id: empresaData?.id
       }
 
       if (id) {
