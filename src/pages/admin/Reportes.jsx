@@ -57,8 +57,8 @@ export default function Reportes() {
 
       const isoDate = dateFilter.toISOString()
 
-      let qComb = supabase.from('cargas_combustible').select('vehiculo_id, fecha_hora, precio_total, vehiculo:vehiculos(patente)').gte('fecha_hora', isoDate)
-      let qMant = supabase.from('mantenimientos').select('vehiculo_id, fecha, costo, tipo, vehiculo:vehiculos(patente)').gte('fecha', isoDate)
+      let qComb = supabase.from('cargas_combustible').select('vehiculo_id, fecha_hora, precio_total, litros').gte('fecha_hora', isoDate)
+      let qMant = supabase.from('mantenimientos').select('vehiculo_id, fecha, costo, tipo').gte('fecha', isoDate)
       let qTurnos = supabase.from('turnos').select('vehiculo_id, fecha_inicio, odometro_inicio, odometro_fin, kilometros_recorridos, fecha_fin').gte('fecha_inicio', isoDate).not('fecha_fin', 'is', null)
 
       if (vehiculoFiltro) {
@@ -67,8 +67,12 @@ export default function Reportes() {
         qTurnos = qTurnos.eq('vehiculo_id', vehiculoFiltro)
       }
 
+      // Cargar vehiculos para merge manual en JS
+      const resVehiculos = await supabase.from('vehiculos').select('id, patente, marca, modelo')
+      const vehiculosMap = Object.fromEntries((resVehiculos.data || []).map(v => [v.id, v]))
+
       // Top Vehículos siempre se calcula global para mantener el ranking
-      const resCombGlobal = await supabase.from('cargas_combustible').select('precio_total, vehiculo:vehiculos(patente)').gte('fecha_hora', isoDate)
+      const resCombGlobal = await supabase.from('cargas_combustible').select('precio_total, vehiculo_id').gte('fecha_hora', isoDate)
 
       const [resComb, resMant, resTurnos] = await Promise.all([qComb, qMant, qTurnos])
 
@@ -76,10 +80,11 @@ export default function Reportes() {
       if (resMant.error) throw resMant.error
       if (resTurnos.error) throw resTurnos.error
 
-      const comb = resComb.data || []
-      const mant = resMant.data || []
+      // Agregar datos de vehículo manualmente
+      const comb = (resComb.data || []).map(c => ({ ...c, vehiculo: vehiculosMap[c.vehiculo_id] || null }))
+      const mant = (resMant.data || []).map(m => ({ ...m, vehiculo: vehiculosMap[m.vehiculo_id] || null }))
       const turnos = resTurnos.data || []
-      const combGlobal = resCombGlobal.data || []
+      const combGlobal = (resCombGlobal.data || []).map(c => ({ ...c, vehiculo: vehiculosMap[c.vehiculo_id] || null }))
 
       // KPIs
       const tComb = comb.reduce((acc, curr) => acc + Number(curr.precio_total || 0), 0)

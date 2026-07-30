@@ -16,14 +16,7 @@ export default function AdminNovedades() {
   async function cargarNovedades() {
     setLoading(true)
     try {
-      let query = supabase
-        .from('novedades')
-        .select(`
-          *,
-          choferes (nombre),
-          vehiculos (patente, marca, modelo)
-        `)
-        .order('fecha_hora', { ascending: false })
+      let query = supabase.from('novedades').select('*').order('fecha_hora', { ascending: false })
 
       if (filter === 'abiertas') {
         query = query.eq('estado', 'abierta')
@@ -31,10 +24,24 @@ export default function AdminNovedades() {
         query = query.eq('estado', 'cerrada')
       }
 
-      const { data, error } = await query
+      const [resNov, resChoferes, resVehiculos] = await Promise.all([
+        query,
+        supabase.from('choferes').select('id, nombre'),
+        supabase.from('vehiculos').select('id, patente, marca, modelo')
+      ])
 
-      if (error) throw error
-      setNovedades(data || [])
+      if (resNov.error) throw resNov.error
+
+      const choferesMap = Object.fromEntries((resChoferes.data || []).map(c => [c.id, c]))
+      const vehiculosMap = Object.fromEntries((resVehiculos.data || []).map(v => [v.id, v]))
+
+      const novConDatos = (resNov.data || []).map(n => ({
+        ...n,
+        choferes: choferesMap[n.chofer_id] || null,
+        vehiculos: vehiculosMap[n.vehiculo_id] || null
+      }))
+
+      setNovedades(novConDatos)
     } catch (err) {
       console.error('Error:', err)
     } finally {

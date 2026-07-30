@@ -27,14 +27,36 @@ export default function Usuarios() {
   async function cargarUsuarios() {
     setLoading(true)
     try {
-      // Usamos la vista que ya tiene todo procesado en la base de datos
-      const { data, error } = await supabase
-        .from('usuarios')
+      // Leer desde user_roles (tabla real que tenemos)
+      const { data: roles, error } = await supabase
+        .from('user_roles')
         .select('*')
         .order('created_at', { ascending: false })
 
       if (error) throw error
-      setUsuarios(data || [])
+
+      // Cargar choferes para enriquecer los datos
+      const { data: choferesData } = await supabase
+        .from('choferes')
+        .select('id, nombre, email, dni')
+
+      const choferesMap = Object.fromEntries((choferesData || []).map(c => [c.id, c]))
+
+      // Combinar: mostrar user_roles con datos del chofer vinculado
+      const usuariosEnriquecidos = (roles || []).map(r => {
+        const chofer = r.chofer_id ? choferesMap[r.chofer_id] : null
+        return {
+          id: r.user_id,
+          email: chofer?.email || r.user_id,
+          nombre: chofer?.nombre || `Usuario (${r.rol})`,
+          rol: r.rol,
+          chofer_id: r.chofer_id,
+          created_at: r.created_at,
+          activo: true
+        }
+      })
+
+      setUsuarios(usuariosEnriquecidos)
     } catch (err) {
       console.error('Error cargando usuarios:', err)
     } finally {

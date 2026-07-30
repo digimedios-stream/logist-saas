@@ -32,43 +32,103 @@ export default function AdminDashboard() {
 
   async function cargarDatos() {
     try {
-      // Dashboard stats
-      const { data: statsData } = await supabase.rpc('fn_dashboard_stats')
-      setStats(statsData)
+      const hoy = new Date()
+      const en60Dias = new Date(hoy.getTime() + 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
 
-      // Próximos vencimientos
-      const { data: venc } = await supabase.rpc('fn_obtener_vencimientos_proximos', { p_dias: 60 })
-      setVencimientos(venc || [])
+      // Todas las consultas en paralelo — simples y sin FK joins
+      const [
+        resVehiculos, resChoferes, resTurnos,
+        resAdicionales, resMultas, resNovedades,
+        resSeguros, resVtv, resMants
+      ] = await Promise.all([
+        supabase.from('vehiculos').select('id, tipo_propietario, activo').eq('activo', true),
+        supabase.from('choferes').select('id').eq('activo', true),
+        supabase.from('turnos').select('id, activo').eq('activo', true),
+        supabase.from('adicionales').select('id, estado').eq('estado', 'pendiente'),
+        supabase.from('multas').select('id, estado').eq('estado', 'pendiente'),
+        supabase.from('novedades').select('id, leida').eq('leida', false),
+        supabase.from('seguros').select('id, vehiculo_id, compania, fecha_vencimiento, vencimiento').lte('fecha_vencimiento', en60Dias).order('fecha_vencimiento'),
+        supabase.from('vtv_rto').select('id, vehiculo_id, fecha_vencimiento').lte('fecha_vencimiento', en60Dias).order('fecha_vencimiento'),
+        supabase.from('mantenimientos').select('id, descripcion, proximo_km, estado, fecha, vehiculo_id').eq('estado', 'programado')
+      ])
 
-      // Mantenimientos pendientes / próximos (800km)
-      const { data: mants } = await supabase
-        .from('mantenimientos')
-        .select(`
-          id, 
-          descripcion, 
-          proximo_km, 
-          estado,
-          fecha,
-          vehiculo:vehiculos(id, patente, marca, modelo, kilometraje_actual)
-        `)
-        .eq('estado', 'programado')
+      // Construir stats
+      const vehiculos = resVehiculos.data || []
+      setStats({
+        total_vehiculos: vehiculos.length,
+        vehiculos_propios: vehiculos.filter(v => v.tipo_propietario === 'propio').length,
+        vehiculos_terceros: vehiculos.filter(v => v.tipo_propietario === 'tercero').length,
+        choferes_activos: (resChoferes.data || []).length,
+        turnos_activos: (resTurnos.data || []).length,
+        adicionales_pendientes: (resAdicionales.data || []).length,
+        multas_pendientes: (resMultas.data || []).length,
+        novedades_no_leidas: (resNovedades.data || []).length,
+        proximos_vencimientos: (resSeguros.data || []).length + (resVtv.data || []).length,
+        consumo_medio: null
+      })
 
-      if (mants) {
-         // Agrupar por vehículo y quedarse con el que tiene el mayor proximo_km
-         const mantsMap = new Map();
-         mants.forEach(m => {
-            if (!m.vehiculo || !m.proximo_km) return;
-            const existing = mantsMap.get(m.vehiculo.id);
-            if (!existing || m.proximo_km > existing.proximo_km) {
-                mantsMap.set(m.vehiculo.id, m);
-            }
-         });
+      // Construir tabla de próximos vencimientos
+      const vencimientosConsolidados = []
 
-         const pendientes = Array.from(mantsMap.values()).filter(m => {
-           return m.vehiculo.kilometraje_actual >= (m.proximo_km - 800)
-         }).sort((a, b) => (a.proximo_km - a.vehiculo.kilometraje_actual) - (b.proximo_km - b.vehiculo.kilometraje_actual))
-         
-         setMantenimientosPendientes(pendientes)
+      // Cargar datos de vehiculos para los joins manuales
+      const { data: todosVehiculos } = await supabase.from('vehiculos').select('id, patente, marca, modelo')
+      const vehiculosMap = Object.fromEntries((todosVehiculos || []).map(v => [v.id, v]))
+
+      ;(resSeguros.data || []).forEach(s => {
+        const veh = vehiculosMap[s.vehiculo_id]
+        vencimientosConsolidados.push({
+          entidad_tipo: 'Seguro',
+          descripcion: s.compania || 'Seguro Automotor',
+          vehiculo_patente: veh?.patente || '—',
+          chofer_nombre: null,
+          fecha_vencimiento: s.fecha_vencimiento || s.vencimiento
+        })
+      })
+
+      ;(resVtv.data || []).forEach(v => {
+        const veh = vehiculosMap[v.vehiculo_id]
+        vencimientosConsolidados.push({
+          entidad_tipo: 'VTV / RTO',
+          descripcion: 'Verificación Técnica',
+          vehiculo_patente: veh?.patente || '—',
+          chofer_nombre: null,
+          fecha_vencimiento: v.fecha_vencimiento
+        })
+      })
+
+      vencimientosConsolidados.sort((a, b) => new Date(a.fecha_vencimiento) - new Date(b.fecha_vencimiento))
+      setVencimientos(vencimientosConsolidados)
+
+      // Mantenimientos próximos — merge en JS
+      const mants = resMants.data || []
+      if (mants.length > 0) {
+        const mantsMap = new Map()
+        mants.forEach(m => {
+          if (!m.vehiculo_id || !m.proximo_km) return
+          const veh = vehiculosMap[m.vehiculo_id]
+          if (!veh) return
+          const mConVeh = { ...m, vehiculo: { ...veh, kilometraje_actual: 0 } }
+          const existing = mantsMap.get(m.vehiculo_id)
+          if (!existing || m.proximo_km > existing.proximo_km) {
+            mantsMap.set(m.vehiculo_id, mConVeh)
+          }
+        })
+
+        // Cargar kilometraje actual de los vehiculos con mantenimientos
+        const vehiculoIds = [...mantsMap.keys()]
+        if (vehiculoIds.length > 0) {
+          const { data: vehs } = await supabase.from('vehiculos').select('id, kilometraje_actual').in('id', vehiculoIds)
+          const kmMap = Object.fromEntries((vehs || []).map(v => [v.id, v.kilometraje_actual || 0]))
+          mantsMap.forEach((m, vId) => {
+            m.vehiculo.kilometraje_actual = kmMap[vId] || 0
+          })
+        }
+
+        const pendientes = Array.from(mantsMap.values())
+          .filter(m => m.vehiculo.kilometraje_actual >= (m.proximo_km - 800))
+          .sort((a, b) => (a.proximo_km - a.vehiculo.kilometraje_actual) - (b.proximo_km - b.vehiculo.kilometraje_actual))
+
+        setMantenimientosPendientes(pendientes)
       }
 
     } catch (err) {
