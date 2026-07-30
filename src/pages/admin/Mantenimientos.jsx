@@ -84,20 +84,31 @@ export default function Mantenimientos() {
 
       const payload = {
         ...dataToSave,
-        costo: dataToSave.costo ? parseFloat(dataToSave.costo) : null,
-        kilometraje: dataToSave.kilometraje ? parseInt(dataToSave.kilometraje) : null,
-        proximo_km: dataToSave.proximo_km ? parseInt(dataToSave.proximo_km) : null,
+        fecha: dataToSave.fecha || null,
+        costo: dataToSave.costo && !isNaN(parseFloat(dataToSave.costo)) ? parseFloat(dataToSave.costo) : null,
+        kilometraje: dataToSave.kilometraje && !isNaN(parseInt(dataToSave.kilometraje)) ? parseInt(dataToSave.kilometraje) : null,
+        proximo_km: dataToSave.proximo_km && !isNaN(parseInt(dataToSave.proximo_km)) ? parseInt(dataToSave.proximo_km) : null,
         mecanico_id: dataToSave.mecanico_id || null,
         empresa_id: empresaData?.id
       }
 
+      console.log("Enviando payload a mantenimientos:", payload)
+
+      let res;
       if (id) {
-        await supabase.from('mantenimientos').update(payload).eq('id', id)
+        res = await supabase.from('mantenimientos').update(payload).eq('id', id)
       } else {
-        await supabase.from('mantenimientos').insert(payload)
+        res = await supabase.from('mantenimientos').insert(payload)
       }
+      
+      if (res.error) {
+        console.error("Error devuelto por Supabase:", res.error)
+        throw new Error(res.error.message || JSON.stringify(res.error))
+      }
+      
       await cargarDatos()
       handleCancel()
+      alert(id ? '¡Mantenimiento actualizado!' : '¡Mantenimiento guardado con éxito!')
     } catch (err) {
       alert('Error: ' + err.message)
     } finally {

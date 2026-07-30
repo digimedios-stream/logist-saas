@@ -10,7 +10,6 @@ const NAV_ITEMS = [
   { to: '/chofer/turno', icon: 'play_circle', label: 'Turno' },
   { to: '/chofer/combustible', icon: 'local_gas_station', label: 'Combustible' },
   { to: '/chofer/novedades', icon: 'report', label: 'Novedades' },
-  { to: '/chofer/adicionales', icon: 'add_task', label: 'Adicionales' },
   { to: '/chofer/mantenimientos', icon: 'build', label: 'Mantenimientos' },
   { to: '/chofer/tracking', icon: 'location_on', label: 'Rastreo' },
 ]

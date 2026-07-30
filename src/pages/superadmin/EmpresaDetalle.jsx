@@ -9,7 +9,7 @@ const ROL_COLORS = {
   chofer: 'text-amber-400 bg-amber-500/10 border-amber-500/30',
 }
 
-const USER_FORM_INITIAL = { email: '', password: '', nombre: '', rol: 'admin' }
+const USER_FORM_INITIAL = { id: '', email: '', password: '', nombre: '', rol: 'chofer', chofer_id: '' }
 
 // Catálogo de todos los módulos disponibles en la plataforma
 const MODULOS_CATALOGO = [
@@ -39,6 +39,9 @@ export default function EmpresaDetalle() {
   const [userForm, setUserForm] = useState(USER_FORM_INITIAL)
   const [savingUser, setSavingUser] = useState(false)
   const [userError, setUserError] = useState('')
+  const [choferes, setChoferes] = useState([])
+  const [isEditingUser, setIsEditingUser] = useState(false)
+  const [showPasswordModal, setShowPasswordModal] = useState(false)
 
   useEffect(() => {
     if (id) cargarEmpresa()
@@ -47,14 +50,21 @@ export default function EmpresaDetalle() {
   async function cargarEmpresa() {
     setLoading(true)
     try {
-      const [{ data: emp }, { data: mods }, { data: users }] = await Promise.all([
+      const [{ data: emp }, { data: mods }, { data: users }, { data: chofs }] = await Promise.all([
         supabase.from('empresas').select('*').eq('id', id).single(),
         supabase.from('empresa_modulos').select('modulo').eq('empresa_id', id).eq('habilitado', true),
-        supabase.from('user_roles').select('id, rol, nombre, activo, user_id').eq('empresa_id', id).order('rol')
+        supabase.from('user_roles').select('id, rol, nombre, activo, user_id, chofer_id').eq('empresa_id', id).order('rol'),
+        supabase.from('choferes').select('id, nombre').eq('empresa_id', id).eq('activo', true).order('nombre')
       ])
       setEmpresa(emp)
       setModulosActivos(new Set(mods?.map(m => m.modulo) || []))
-      setUsuarios(users || [])
+      
+      const choferesMap = Object.fromEntries((chofs || []).map(c => [c.id, c]))
+      setUsuarios((users || []).map(u => ({
+        ...u,
+        chofer_nombre: u.chofer_id ? choferesMap[u.chofer_id]?.nombre : null
+      })))
+      setChoferes(chofs || [])
     } catch (err) {
       console.error(err)
     } finally {
@@ -105,35 +115,67 @@ export default function EmpresaDetalle() {
     if (!error) setEmpresa(e => ({ ...e, activa: !e.activa }))
   }
 
-  async function crearUsuario(e) {
+  async function handleGuardarUsuario(e) {
     e.preventDefault()
     setSavingUser(true)
     setUserError('')
     try {
-      const { data: { session } } = await supabase.auth.getSession()
-      const resp = await fetch(`${SUPABASE_URL}/functions/v1/crear-usuario-empresa`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({
+      const action = isEditingUser ? 'update' : 'create'
+      const { data, error } = await supabase.functions.invoke('admin-usuarios', {
+        body: {
+          action: action,
+          userId: userForm.id,
           email: userForm.email.trim(),
           password: userForm.password,
           nombre: userForm.nombre.trim(),
-          empresa_id: id,
           rol: userForm.rol,
-        }),
+          chofer_id: userForm.chofer_id || null,
+          empresa_id: id
+        }
       })
-      const result = await resp.json()
-      if (!resp.ok) throw new Error(result.error || 'Error desconocido')
+
+      if (error) throw error
+      if (data?.error) throw new Error(data.error)
+
       setShowUserModal(false)
       setUserForm(USER_FORM_INITIAL)
+      setIsEditingUser(false)
       await cargarEmpresa() // Recargar para ver el nuevo usuario
     } catch (err) {
       setUserError(err.message)
     } finally {
       setSavingUser(false)
+    }
+  }
+
+  const handleEditUser = (u) => {
+    setUserForm({
+      id: u.user_id,
+      email: u.email || '', // No mostramos email en la tabla actual, pero si existiera...
+      password: '',
+      nombre: u.nombre,
+      rol: u.rol,
+      chofer_id: u.chofer_id || ''
+    })
+    setIsEditingUser(true)
+    setUserError('')
+    setShowUserModal(true)
+  }
+
+  const handleEliminarUsuario = async (userId) => {
+    if (!confirm('¿Estás SEGURO de eliminar definitivamente a este usuario? Esta acción borrará su acceso.')) return
+    setLoading(true)
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-usuarios', {
+        body: { action: 'delete', userId: userId, empresa_id: id }
+      })
+      if (error) throw error
+      if (data?.error) throw new Error(data.error)
+      await cargarEmpresa()
+    } catch (err) {
+      alert('Error eliminando usuario: ' + err.message)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -298,6 +340,7 @@ export default function EmpresaDetalle() {
                   <th className="px-5 py-3">Nombre</th>
                   <th className="px-5 py-3">Rol</th>
                   <th className="px-5 py-3">Estado</th>
+                  <th className="px-5 py-3 text-right">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/50">
@@ -308,7 +351,10 @@ export default function EmpresaDetalle() {
                         <div className="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-400">
                           <span className="material-symbols-outlined text-sm">person</span>
                         </div>
-                        <span className="text-sm font-bold text-white">{u.nombre || '—'}</span>
+                        <span className="text-sm font-bold text-white">
+                          {u.nombre || '—'}
+                          {u.chofer_nombre && <span className="ml-2 text-slate-500 font-normal italic text-[11px]">— {u.chofer_nombre}</span>}
+                        </span>
                       </div>
                     </td>
                     <td className="px-5 py-3">
@@ -325,6 +371,16 @@ export default function EmpresaDetalle() {
                         {u.activo ? 'Activo' : 'Inactivo'}
                       </button>
                     </td>
+                    <td className="px-5 py-3 text-right">
+                      <div className="flex justify-end gap-2">
+                         <button onClick={() => handleEditUser(u)} className="p-2 bg-slate-800/50 hover:bg-slate-700 rounded-lg text-slate-400 hover:text-white transition-all">
+                            <span className="material-symbols-outlined text-sm">edit</span>
+                         </button>
+                         <button onClick={() => handleEliminarUsuario(u.user_id)} className="p-2 bg-red-500/10 hover:bg-red-500/20 rounded-lg text-red-500 transition-all">
+                            <span className="material-symbols-outlined text-sm">delete_forever</span>
+                         </button>
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -337,16 +393,16 @@ export default function EmpresaDetalle() {
       {showUserModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
-            <div className="p-6 border-b border-slate-800 flex items-center justify-between">
+              <div className="p-6 border-b border-slate-800 flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-black text-white uppercase tracking-tight">Nuevo Usuario</h3>
+                <h3 className="text-lg font-black text-white uppercase tracking-tight">{isEditingUser ? 'Editar Usuario' : 'Nuevo Usuario'}</h3>
                 <p className="text-xs text-slate-500 mt-0.5">Para: <span className="text-purple-300 font-bold">{empresa.nombre}</span></p>
               </div>
               <button onClick={() => setShowUserModal(false)} className="text-slate-500 hover:text-white transition-colors">
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
-            <form onSubmit={crearUsuario} className="p-6 space-y-4">
+            <form onSubmit={handleGuardarUsuario} className="p-6 space-y-4">
               {userError && (
                 <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm text-center">
                   {userError}
@@ -363,29 +419,45 @@ export default function EmpresaDetalle() {
                   placeholder="Ej: Juan García"
                 />
               </div>
-              <div>
-                <label className="text-[10px] uppercase font-black text-slate-500 mb-1.5 block">Email *</label>
-                <input
-                  type="email"
-                  required
-                  value={userForm.email}
-                  onChange={e => setUserForm(f => ({ ...f, email: e.target.value }))}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-purple-500/40 outline-none transition-all"
-                  placeholder="juan@empresa.com"
-                />
-              </div>
-              <div>
-                <label className="text-[10px] uppercase font-black text-slate-500 mb-1.5 block">Contraseña *</label>
-                <input
-                  type="password"
-                  required
-                  minLength={6}
-                  value={userForm.password}
-                  onChange={e => setUserForm(f => ({ ...f, password: e.target.value }))}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-purple-500/40 outline-none transition-all"
-                  placeholder="Mínimo 6 caracteres"
-                />
-              </div>
+              
+              {!isEditingUser && (
+                <>
+                  <div>
+                    <label className="text-[10px] uppercase font-black text-slate-500 mb-1.5 block">Email *</label>
+                    <input
+                      type="email"
+                      required
+                      value={userForm.email}
+                      onChange={e => setUserForm(f => ({ ...f, email: e.target.value }))}
+                      className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-purple-500/40 outline-none transition-all"
+                      placeholder="juan@empresa.com"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] uppercase font-black text-slate-500 mb-1.5 block">Contraseña *</label>
+                    <div className="relative group">
+                      <input 
+                        required 
+                        type={showPasswordModal ? "text" : "password"} 
+                        value={userForm.password} 
+                        onChange={e => setUserForm({...userForm, password: e.target.value})} 
+                        className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 pr-12 text-white focus:ring-2 focus:ring-purple-500/40 outline-none transition-all" 
+                        minLength={6} 
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPasswordModal(!showPasswordModal)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors"
+                        title={showPasswordModal ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                      >
+                        <span className="material-symbols-outlined text-lg leading-none">
+                          {showPasswordModal ? 'visibility_off' : 'visibility'}
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
               <div>
                 <label className="text-[10px] uppercase font-black text-slate-500 mb-1.5 block">Rol *</label>
                 <div className="grid grid-cols-2 gap-2">
@@ -407,6 +479,26 @@ export default function EmpresaDetalle() {
                   ))}
                 </div>
               </div>
+              {(userForm.rol === 'chofer' || userForm.rol === 'admin') && (
+                <div className="animate-in slide-in-from-top-2 duration-300">
+                  <label className="text-[10px] uppercase font-black text-amber-500 mb-1.5 block flex items-center gap-1">
+                    <span className="material-symbols-outlined text-sm">link</span>
+                    {userForm.rol === 'chofer' ? 'Chofer Asociado (Obligatorio)' : 'Vincular a Chofer (Opcional)'}
+                  </label>
+                  <select 
+                    required={userForm.rol === 'chofer'} 
+                    value={userForm.chofer_id || ''} 
+                    onChange={e => setUserForm({...userForm, chofer_id: e.target.value})}
+                    className="w-full bg-slate-800 border border-amber-500/30 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-amber-500/40 outline-none transition-all"
+                  >
+                    <option value="">Selecciona al chofer de la lista...</option>
+                    {choferes.map(c => (
+                      <option key={c.id} value={c.id}>{c.nombre}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              
               <div className="pt-2 flex gap-3">
                 <button type="button" onClick={() => setShowUserModal(false)}
                   className="flex-1 py-3 text-xs font-bold text-slate-400 bg-slate-800 rounded-xl hover:bg-slate-700 transition-all">
@@ -414,7 +506,7 @@ export default function EmpresaDetalle() {
                 </button>
                 <button type="submit" disabled={savingUser}
                   className="flex-1 py-3 text-xs font-bold bg-purple-600 hover:bg-purple-500 text-white rounded-xl transition-all disabled:opacity-50 shadow-lg shadow-purple-900/30">
-                  {savingUser ? 'CREANDO...' : 'CREAR USUARIO'}
+                  {savingUser ? 'PROCESANDO...' : 'GUARDAR'}
                 </button>
               </div>
             </form>

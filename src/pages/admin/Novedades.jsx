@@ -16,7 +16,7 @@ export default function AdminNovedades() {
   async function cargarNovedades() {
     setLoading(true)
     try {
-      let query = supabase.from('novedades').select('*').order('fecha_hora', { ascending: false })
+      let query = supabase.from('novedades').select('*').order('created_at', { ascending: false })
 
       if (filter === 'abiertas') {
         query = query.eq('estado', 'abierta')
@@ -139,7 +139,7 @@ export default function AdminNovedades() {
                     <span className="text-sm font-bold text-white capitalize">{nov.tipo?.replace('_', ' ')}</span>
                     <span className="text-xs text-slate-500 font-medium flex items-center gap-1">
                       <span className="material-symbols-outlined text-sm">schedule</span>
-                      {formatFechaHora(nov.fecha_hora)}
+                      {formatFechaHora(nov.created_at)}
                     </span>
                   </div>
 

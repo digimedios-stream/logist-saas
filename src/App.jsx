@@ -20,7 +20,6 @@ import Mantenimientos from '@/pages/admin/Mantenimientos'
 import Seguros from '@/pages/admin/Seguros'
 import Multas from '@/pages/admin/Multas'
 import LineasPage from '@/pages/admin/Lineas'
-import Adicionales from '@/pages/admin/Adicionales'
 import Mecanicos from '@/pages/admin/Mecanicos'
 import Reportes from '@/pages/admin/Reportes'
 import VtvRto from '@/pages/admin/VtvRto'
@@ -36,7 +35,6 @@ import ChoferDashboard from '@/pages/chofer/Dashboard'
 import ChoferTurno from '@/pages/chofer/Turno'
 import ChoferCombustible from '@/pages/chofer/Combustible'
 import ChoferNovedades from '@/pages/chofer/Novedades'
-import ChoferAdicionales from '@/pages/chofer/Adicionales'
 import ChoferMantenimientos from '@/pages/chofer/Mantenimientos'
 import TrackingViaje from '@/pages/chofer/TrackingViaje'
 
@@ -159,7 +157,6 @@ export default function App() {
           <Route path="seguros"       element={<ModuleRoute modulo="seguros"><Seguros /></ModuleRoute>} />
           <Route path="multas"        element={<ModuleRoute modulo="multas"><Multas /></ModuleRoute>} />
           <Route path="lineas"        element={<ModuleRoute modulo="lineas"><LineasPage /></ModuleRoute>} />
-          <Route path="adicionales"   element={<ModuleRoute modulo="adicionales"><Adicionales /></ModuleRoute>} />
           <Route path="mecanicos"     element={<ModuleRoute modulo="mecanicos"><Mecanicos /></ModuleRoute>} />
           <Route path="vtv"           element={<ModuleRoute modulo="vtv"><VtvRto /></ModuleRoute>} />
           <Route path="reportes"      element={<ModuleRoute modulo="reportes"><Reportes /></ModuleRoute>} />
@@ -183,7 +180,6 @@ export default function App() {
           <Route path="turno" element={<ChoferTurno />} />
           <Route path="combustible" element={<ChoferCombustible />} />
           <Route path="novedades" element={<ChoferNovedades />} />
-          <Route path="adicionales" element={<ChoferAdicionales />} />
           <Route path="mantenimientos" element={<ChoferMantenimientos />} />
           <Route path="tracking" element={<TrackingViaje />} />
         </Route>

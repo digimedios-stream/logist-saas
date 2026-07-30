@@ -35,7 +35,9 @@ export default function TrackingViaje() {
           .select('*')
           .eq('chofer_id', roleData.chofer_id)
           .neq('estado', 'finalizado')
-          .single()
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
 
         if (viajeData) {
           setViajeActivo(viajeData)

@@ -119,6 +119,12 @@ export default function ChoferTurno() {
         
         if (updError) throw updError
 
+        // Finalizar también el viaje GPS asociado (si existe)
+        await supabase
+          .from('viajes')
+          .update({ estado: 'finalizado', fecha_fin: new Date().toISOString() })
+          .eq('turno_id', turnoActivo.id)
+
         // También actualizamos el km del vehículo
         await supabase
           .from('vehiculos')
@@ -177,6 +183,31 @@ export default function ChoferTurno() {
         if (insError) throw insError
         setTurnoActivo(data)
         setOdometro('')
+
+        // Activar viaje GPS automáticamente para la línea diaria
+        if (vehiculoAsignado.linea_principal_id) {
+          // Obtener datos de la línea para el origen/destino
+          const { data: lineaData } = await supabase.from('lineas').select('*').eq('id', vehiculoAsignado.linea_principal_id).single()
+          
+          await supabase.from('viajes').insert({
+            empresa_id: empresaData?.id,
+            chofer_id: choferData.id,
+            vehiculo_id: vehiculoAsignado.id,
+            linea_id: vehiculoAsignado.linea_principal_id,
+            turno_id: data.id,
+            estado: 'en_ruta', // Empieza activo directamente
+            tipo: 'linea',
+            origen: lineaData?.descripcion?.split('->')[0]?.trim() || lineaData?.nombre || 'Origen',
+            destino: lineaData?.descripcion?.split('->')[1]?.trim() || '',
+            fecha_inicio: new Date().toISOString()
+          })
+          
+          // Redirigir al chofer al mapa para que el GPS empiece a transmitir
+          alert('¡Turno iniciado! Se activará el GPS para tu ruta diaria.')
+          navigate('/chofer/tracking')
+          return
+        }
+
       }
     } catch (err) {
       setError(err.message)

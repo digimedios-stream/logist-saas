@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { formatFechaCorta, formatMoneda } from '@/lib/utils'
+import { useAuth } from '@/contexts/AuthContext'
 
 export default function Liquidaciones() {
+  const { empresaData } = useAuth()
   const [choferes, setChoferes] = useState([])
   const [selectedChofer, setSelectedChofer] = useState('')
   const [periodo, setPeriodo] = useState({ 
@@ -13,14 +15,51 @@ export default function Liquidaciones() {
   const [resumen, setResumen] = useState(null)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [historial, setHistorial] = useState([])
+  const [loadingHistorial, setLoadingHistorial] = useState(true)
 
   useEffect(() => {
     cargarChoferes()
+    cargarHistorial()
   }, [])
 
   async function cargarChoferes() {
     const { data } = await supabase.from('choferes').select('id, nombre').eq('activo', true)
     setChoferes(data || [])
+  }
+
+  async function cargarHistorial() {
+    setLoadingHistorial(true)
+    try {
+      const { data: liq } = await supabase
+        .from('liquidaciones')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(50)
+      const choferesMap = Object.fromEntries((choferes).map(c => [c.id, c]))
+      // Fetch all choferes for mapping
+      const { data: allChoferes } = await supabase.from('choferes').select('id, nombre')
+      const choferesMapAll = Object.fromEntries((allChoferes || []).map(c => [c.id, c]))
+      setHistorial((liq || []).map(l => ({ ...l, chofer: choferesMapAll[l.chofer_id] || null })))
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoadingHistorial(false)
+    }
+  }
+
+  async function marcarPagado(id) {
+    if (!confirm('¿Marcar esta liquidación como PAGADA?')) return
+    const { error } = await supabase.from('liquidaciones').update({ estado: 'pagado' }).eq('id', id)
+    if (error) return alert('Error: ' + error.message)
+    await cargarHistorial()
+  }
+
+  async function eliminarLiquidacion(id) {
+    if (!confirm('¿Estás SEGURO de eliminar esta liquidación del historial?')) return
+    const { error } = await supabase.from('liquidaciones').delete().eq('id', id)
+    if (error) return alert('Error: ' + error.message)
+    await cargarHistorial()
   }
 
   async function generarPreliquidacion() {
@@ -35,18 +74,19 @@ export default function Liquidaciones() {
         .gte('fecha_inicio', periodo.inicio)
         .lte('fecha_inicio', periodo.fin + 'T23:59:59')
 
-      // 2. Obtener viajes adicionales
+      // 2. Obtener viajes especiales (antes "adicionales")
       const { data: adicionales } = await supabase
-        .from('adicionales')
+        .from('viajes')
         .select('*')
         .eq('chofer_id', selectedChofer)
-        .eq('estado', 'realizado')
+        .eq('tipo', 'especial')
+        .eq('estado', 'finalizado')
         .gte('fecha_inicio', periodo.inicio)
         .lte('fecha_inicio', periodo.fin + 'T23:59:59')
 
       // Calcular parciales
       const subTotalLineas = turnos?.reduce((acc, t) => acc + (t.linea?.remuneracion_base || 0), 0) || 0
-      const subTotalAdic = adicionales?.reduce((acc, a) => acc + (parseFloat(a.remuneracion) || 0), 0) || 0
+      const subTotalAdic = adicionales?.reduce((acc, a) => acc + (parseFloat(a.tarifa) || 0), 0) || 0
 
       setResumen({
         turnos: turnos || [],
@@ -77,6 +117,7 @@ export default function Liquidaciones() {
     setSaving(true)
     try {
       const payload = {
+        empresa_id: empresaData?.id,
         chofer_id: selectedChofer,
         periodo_inicio: periodo.inicio,
         periodo_fin: periodo.fin,
@@ -91,8 +132,9 @@ export default function Liquidaciones() {
 
       const { error } = await supabase.from('liquidaciones').insert(payload)
       if (error) throw error
-      alert('Liquidación guardada correctamente!')
+      alert('¡Liquidación guardada correctamente!')
       setResumen(null)
+      await cargarHistorial()
     } catch (err) {
       alert('Error: ' + err.message)
     } finally {
@@ -203,8 +245,16 @@ export default function Liquidaciones() {
                   <span className="text-slate-400">Subtotal Rutas:</span>
                   <span className="text-white font-mono">{formatMoneda(resumen.subTotalLineas)}</span>
                 </div>
+                {resumen.adicionales.map((a, i) => (
+                  <div key={i} className="flex justify-between items-center text-sm py-1 pl-4 border-l-2 border-slate-800 ml-2">
+                    <span className="text-slate-500 capitalize">
+                      Viaje Especial: {a.origen} → {a.destino} {a.cliente ? `(${a.cliente})` : ''}
+                    </span>
+                    <span className="text-lazdin-emerald font-mono">+{formatMoneda(a.tarifa)}</span>
+                  </div>
+                ))}
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-400">Subtotal Adicionales:</span>
+                  <span className="text-slate-400">Subtotal Especiales:</span>
                   <span className="text-white font-mono">{formatMoneda(resumen.subTotalAdic)}</span>
                 </div>
                 
@@ -236,6 +286,92 @@ export default function Liquidaciones() {
           </div>
         </div>
       )}
+
+      {/* HISTORIAL DE LIQUIDACIONES */}
+      <div className="bg-lazdin-surface border border-slate-800 rounded-xl overflow-hidden shadow-xl">
+        <div className="p-5 border-b border-slate-800 bg-slate-900/50 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="material-symbols-outlined text-lazdin-emerald">history</span>
+            <h3 className="text-base font-bold">Historial de Liquidaciones</h3>
+          </div>
+          <button onClick={cargarHistorial} className="text-xs text-slate-400 hover:text-white flex items-center gap-1 transition-colors">
+            <span className="material-symbols-outlined text-sm">refresh</span>
+            Actualizar
+          </button>
+        </div>
+
+        {loadingHistorial ? (
+          <div className="p-8 text-center text-slate-500 text-sm">Cargando historial...</div>
+        ) : historial.length === 0 ? (
+          <div className="p-8 text-center text-slate-500 text-sm">No hay liquidaciones guardadas aún.</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left">
+              <thead className="bg-slate-800/40 text-slate-400 uppercase text-[10px]">
+                <tr>
+                  <th className="px-4 py-3">Chofer</th>
+                  <th className="px-4 py-3">Período</th>
+                  <th className="px-4 py-3 text-right">Rutas</th>
+                  <th className="px-4 py-3 text-right">Adicionales</th>
+                  <th className="px-4 py-3 text-right">Bonif.</th>
+                  <th className="px-4 py-3 text-right">Deduc.</th>
+                  <th className="px-4 py-3 text-right font-bold">Total Neto</th>
+                  <th className="px-4 py-3 text-center">Estado</th>
+                  <th className="px-4 py-3 text-center">Acciones</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800">
+                {historial.map(liq => (
+                  <tr key={liq.id} className="hover:bg-slate-800/20 transition-colors">
+                    <td className="px-4 py-3 font-bold text-white">
+                      {liq.chofer?.nombre || <span className="text-slate-500 text-xs">Sin nombre</span>}
+                    </td>
+                    <td className="px-4 py-3 text-slate-400 text-xs font-mono">
+                      {liq.periodo_inicio ? `${liq.periodo_inicio} → ${liq.periodo_fin}` : (liq.periodo || '—')}
+                    </td>
+                    <td className="px-4 py-3 text-right text-slate-300 font-mono text-xs">{formatMoneda(liq.remuneracion_base || 0)}</td>
+                    <td className="px-4 py-3 text-right text-slate-300 font-mono text-xs">{formatMoneda(liq.adicionales_monto || 0)}</td>
+                    <td className="px-4 py-3 text-right text-lazdin-emerald font-mono text-xs">{formatMoneda(liq.bonificaciones || 0)}</td>
+                    <td className="px-4 py-3 text-right text-red-400 font-mono text-xs">{formatMoneda(liq.deducciones || 0)}</td>
+                    <td className="px-4 py-3 text-right font-bold font-mono text-white">{formatMoneda(liq.total_neto || 0)}</td>
+                    <td className="px-4 py-3 text-center">
+                      <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${
+                        liq.estado === 'pagado' 
+                          ? 'bg-emerald-900/50 text-lazdin-emerald'
+                          : liq.estado === 'anulado'
+                          ? 'bg-red-900/50 text-red-400'
+                          : 'bg-amber-900/50 text-amber-400'
+                      }`}>
+                        {liq.estado === 'pagado' ? 'Pagado' : liq.estado === 'anulado' ? 'Anulado' : 'Pendiente'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center justify-center gap-2">
+                        {liq.estado === 'pendiente' && (
+                          <button
+                            onClick={() => marcarPagado(liq.id)}
+                            title="Marcar como pagado"
+                            className="text-lazdin-emerald hover:text-emerald-300 transition-colors"
+                          >
+                            <span className="material-symbols-outlined text-sm">check_circle</span>
+                          </button>
+                        )}
+                        <button
+                          onClick={() => eliminarLiquidacion(liq.id)}
+                          title="Eliminar"
+                          className="text-slate-500 hover:text-red-400 transition-colors"
+                        >
+                          <span className="material-symbols-outlined text-sm">delete</span>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

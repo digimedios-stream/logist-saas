@@ -9,6 +9,7 @@ export default function ChoferDashboard() {
   const { choferData, vehiculoAsignado, loading: authLoading } = useAuth()
   const { tema, esTercero, nombreMostrar } = useTheme()
   const [dashData, setDashData] = useState(null)
+  const [viajeGps, setViajeGps] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -23,8 +24,20 @@ export default function ChoferDashboard() {
 
   async function cargarDashboard() {
     try {
-      const { data } = await supabase.rpc('fn_chofer_dashboard', { p_chofer_id: choferData.id })
-      setDashData(data)
+      const [dashRes, viajeRes] = await Promise.all([
+        supabase.rpc('fn_chofer_dashboard', { p_chofer_id: choferData.id }),
+        supabase.from('viajes')
+          .select('*')
+          .eq('chofer_id', choferData.id)
+          .neq('estado', 'finalizado')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+      ])
+      
+      if (dashRes.data) setDashData(dashRes.data)
+      if (viajeRes.data) setViajeGps(viajeRes.data)
+      
     } catch (err) { console.error(err) }
     finally { setLoading(false) }
   }
@@ -71,6 +84,29 @@ export default function ChoferDashboard() {
           </>
         )}
       </div>
+
+      {/* Alerta de Viaje GPS Pendiente */}
+      {viajeGps && (
+        <div className="bg-lazdin-emerald/10 border border-lazdin-emerald/30 p-4 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-pulse-slow shadow-[0_0_20px_rgba(16,185,129,0.15)]">
+          <div className="flex items-center gap-3">
+            <span className="material-symbols-outlined text-lazdin-emerald text-3xl">location_on</span>
+            <div>
+              <h3 className="font-bold text-white text-lg">
+                {viajeGps.estado === 'pendiente' ? '¡Tenés un viaje pendiente de iniciar!' : '¡Viaje en curso!'}
+              </h3>
+              <p className="text-slate-300 text-sm">
+                Destino: {viajeGps.destino || 'Sin especificar'} — {viajeGps.tipo === 'linea' ? 'Turno de Línea' : 'Viaje Especial'}
+              </p>
+            </div>
+          </div>
+          <Link 
+            to="/chofer/tracking"
+            className="bg-lazdin-emerald text-slate-900 px-6 py-2.5 rounded-lg font-black uppercase tracking-widest text-xs hover:bg-emerald-400 transition-colors w-full sm:w-auto text-center shadow-lg shadow-emerald-500/20"
+          >
+            {viajeGps.estado === 'pendiente' ? 'INICIAR RASTREO GPS' : 'VER RASTREO'}
+          </Link>
+        </div>
+      )}
 
       {/* Route Card */}
       {linea && (

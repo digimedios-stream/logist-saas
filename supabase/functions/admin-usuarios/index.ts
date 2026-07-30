@@ -30,33 +30,21 @@ Deno.serve(async (req) => {
       auth: { persistSession: false },
     })
 
-    // Obtener empresa_id del caller
-    const { data: callerEmpresaId, error: rpcError } = await userClient.rpc('get_user_empresa_id')
+    // Comprobar que sea superadmin (ahora solo ellos pueden gestionar usuarios)
+    const { data: esSuperAdmin, error: rpcError } = await userClient.rpc('is_superadmin')
     
-    if (rpcError || !callerEmpresaId) {
-      return new Response(JSON.stringify({ error: 'Acceso denegado: el usuario no pertenece a ninguna empresa activa.' }), {
-        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
-    }
-
-    // Comprobar que sea admin o superadmin
-    // (Un chofer no podría llegar hasta acá porque la UI lo bloquea y RLS también, 
-    // pero agregamos seguridad extra verificando el rol del caller)
-    const { data: userData } = await userClient.auth.getUser()
-    const { data: roleData } = await adminClient
-      .from('user_roles')
-      .select('rol')
-      .eq('user_id', userData.user?.id)
-      .single()
-
-    if (!roleData || (roleData.rol !== 'admin' && roleData.rol !== 'superadmin')) {
-      return new Response(JSON.stringify({ error: 'Acceso denegado: se requiere rol de administrador.' }), {
+    if (rpcError || !esSuperAdmin) {
+      return new Response(JSON.stringify({ error: 'Acceso denegado: se requiere rol de Superadministrador.' }), {
         status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
 
     const body = await req.json()
-    const { action, userId, email, password, nombre, rol, chofer_id } = body
+    const { action, userId, email, password, nombre, rol, chofer_id, empresa_id } = body
+
+    if (!empresa_id) {
+      return new Response(JSON.stringify({ error: 'Falta empresa_id' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
 
     if (action === 'create') {
       if (!email || !password || !nombre || !rol) {
@@ -79,7 +67,7 @@ Deno.serve(async (req) => {
         .from('user_roles')
         .insert([{
           user_id: newUser.user.id,
-          empresa_id: callerEmpresaId,
+          empresa_id: empresa_id,
           rol,
           nombre,
           chofer_id: chofer_id || null,
@@ -99,7 +87,7 @@ Deno.serve(async (req) => {
 
       // Verificar que el usuario a editar pertenezca a la misma empresa del admin
       const { data: targetUser } = await adminClient.from('user_roles').select('empresa_id').eq('user_id', userId).single()
-      if (!targetUser || targetUser.empresa_id !== callerEmpresaId) {
+      if (!targetUser || targetUser.empresa_id !== empresa_id) {
         return new Response(JSON.stringify({ error: 'No tienes permisos sobre este usuario.' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
       }
 
@@ -129,7 +117,7 @@ Deno.serve(async (req) => {
 
       // Verificar permisos
       const { data: targetUser } = await adminClient.from('user_roles').select('empresa_id').eq('user_id', userId).single()
-      if (!targetUser || targetUser.empresa_id !== callerEmpresaId) {
+      if (!targetUser || targetUser.empresa_id !== empresa_id) {
         return new Response(JSON.stringify({ error: 'No tienes permisos sobre este usuario.' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
       }
 

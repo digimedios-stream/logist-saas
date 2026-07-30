@@ -16,11 +16,112 @@ export default function LineasPage() {
     horario_salida: '', horario_regreso: '', remuneracion_base: '', activo: true
   }
   const [form, setForm] = useState(initialState)
+  const [activeTab, setActiveTab] = useState('lineas')
+
+  // Despacho de viajes
+  const [viajes, setViajes] = useState([])
+  const [choferes, setChoferes] = useState([])
+  const [loadingViajes, setLoadingViajes] = useState(false)
+  const [savingViaje, setSavingViaje] = useState(false)
+  const initialViaje = { chofer_id: '', vehiculo_id: '', origen: '', destino: '', cliente: '', notas: '', tarifa: '', tipo: 'especial' }
+  const [formViaje, setFormViaje] = useState(initialViaje)
 
   useEffect(() => { 
     cargarLineas() 
     cargarVehiculos()
+    cargarChoferes()
+    cargarViajes()
   }, [])
+
+  async function cargarChoferes() {
+    const { data } = await supabase.from('choferes').select('id, nombre').eq('activo', true).order('nombre')
+    setChoferes(data || [])
+  }
+
+  async function cargarViajes() {
+    setLoadingViajes(true)
+    try {
+      const [resViajes, resChof, resVeh] = await Promise.all([
+        supabase.from('viajes').select('*').neq('estado', 'finalizado').order('created_at', { ascending: false }),
+        supabase.from('choferes').select('id, nombre'),
+        supabase.from('vehiculos').select('id, patente, marca, modelo').eq('activo', true)
+      ])
+      const choferesMap = Object.fromEntries((resChof.data || []).map(c => [c.id, c]))
+      const vehiculosMap = Object.fromEntries((resVeh.data || []).map(v => [v.id, v]))
+      setViajes((resViajes.data || []).map(v => ({
+        ...v,
+        chofer: choferesMap[v.chofer_id] || null,
+        vehiculo: vehiculosMap[v.vehiculo_id] || null
+      })))
+    } catch(err) { console.error(err) }
+    finally { setLoadingViajes(false) }
+  }
+
+  async function despacharViaje(e) {
+    e.preventDefault()
+    if (!formViaje.chofer_id || !formViaje.vehiculo_id) return alert('Seleccioná chofer y vehículo')
+    setSavingViaje(true)
+    try {
+      const payload = {
+        ...formViaje,
+        tarifa: formViaje.tarifa ? parseFloat(formViaje.tarifa) : 0,
+        empresa_id: empresaData?.id,
+        estado: 'pendiente',
+        fecha_inicio: new Date().toISOString()
+      }
+      const { error } = await supabase.from('viajes').insert(payload)
+      if (error) throw error
+      setFormViaje(initialViaje)
+      await cargarViajes()
+      alert('¡Viaje despachado! El chofer ya puede verlo en su panel.')
+    } catch(err) {
+      alert('Error: ' + err.message)
+    } finally { setSavingViaje(false) }
+  }
+
+  async function despacharDesdeLínea(linea) {
+    // Buscar el primer vehículo asignado a esta línea
+    const vehiculoLinea = linea.personal?.[0]
+    if (!vehiculoLinea) return alert('Esta línea no tiene vehículos asignados. Vinculá uno primero.')
+    
+    const choferNombre = vehiculoLinea.chofer
+    if (choferNombre === 'Sin Chofer') return alert('El vehículo no tiene chofer asignado. Asigná uno primero desde Choferes.')
+
+    // Buscar el chofer_id por nombre en la lista
+    const choferEncontrado = choferes.find(c => c.nombre === choferNombre)
+    if (!choferEncontrado) return alert('No se encontró el chofer en el sistema.')
+
+    if (!confirm(`¿Despachar a ${choferNombre} en la línea ${linea.nombre}?`)) return
+    
+    setSavingViaje(true)
+    try {
+      const payload = {
+        empresa_id: empresaData?.id,
+        chofer_id: choferEncontrado.id,
+        vehiculo_id: vehiculoLinea.id,
+        linea_id: linea.id,
+        origen: linea.descripcion?.split('->')[0]?.trim() || linea.nombre,
+        destino: linea.descripcion?.split('->')[1]?.trim() || '',
+        tipo: 'linea',
+        estado: 'pendiente',
+        fecha_inicio: new Date().toISOString()
+      }
+      const { error } = await supabase.from('viajes').insert(payload)
+      if (error) throw error
+      await cargarLineas()
+      await cargarViajes()
+      alert(`¡Viaje despachado! ${choferNombre} ya puede ver y activar el tracking.`)
+    } catch(err) {
+      alert('Error: ' + err.message)
+    } finally { setSavingViaje(false) }
+  }
+
+  async function finalizarViaje(id) {
+    if (!confirm('¿Finalizar este viaje?')) return
+    const { error } = await supabase.from('viajes').update({ estado: 'finalizado', fecha_fin: new Date().toISOString() }).eq('id', id)
+    if (error) return alert('Error: ' + error.message)
+    await cargarViajes()
+  }
 
   async function cargarVehiculos() {
     const { data } = await supabase.from('vehiculos').select('id, patente, marca, modelo').eq('activo', true).order('patente')
@@ -197,10 +298,41 @@ export default function LineasPage() {
   return (
     <div className="space-y-6 animate-in">
       <div>
-        <h2 className="text-2xl font-bold tracking-tight">Líneas y Recorridos</h2>
-        <p className="text-lazdin-on-primary-container text-sm">Administre las rutas habituales y tarifas base.</p>
+        <h2 className="text-2xl font-bold tracking-tight">Líneas, Rutas y Despacho</h2>
+        <p className="text-lazdin-on-primary-container text-sm">Administre rutas, asigne flota y despache viajes con tracking GPS.</p>
       </div>
 
+      {/* TABS */}
+      <div className="flex gap-1 bg-slate-900/60 p-1 rounded-xl border border-slate-800 w-fit">
+        <button
+          onClick={() => setActiveTab('lineas')}
+          className={`px-5 py-2 rounded-lg text-sm font-bold transition-all ${
+            activeTab === 'lineas' ? 'bg-lazdin-surface text-white shadow-md' : 'text-slate-500 hover:text-white'
+          }`}
+        >
+          <span className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-sm">route</span>
+            Líneas / Rutas
+          </span>
+        </button>
+        <button
+          onClick={() => { setActiveTab('despacho'); cargarViajes() }}
+          className={`px-5 py-2 rounded-lg text-sm font-bold transition-all ${
+            activeTab === 'despacho' ? 'bg-lazdin-surface text-white shadow-md' : 'text-slate-500 hover:text-white'
+          }`}
+        >
+          <span className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-sm">local_shipping</span>
+            Despacho de Viajes
+            {viajes.length > 0 && (
+              <span className="bg-lazdin-emerald text-slate-900 text-[10px] font-black px-1.5 py-0.5 rounded-full">{viajes.length}</span>
+            )}
+          </span>
+        </button>
+      </div>
+
+      {/* TAB LÍNEAS */}
+      {activeTab === 'lineas' && (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-1">
           <form onSubmit={handleSubmit} className="bg-lazdin-surface border border-slate-800 rounded-xl p-6 shadow-xl">
@@ -437,6 +569,15 @@ export default function LineasPage() {
                   <button onClick={() => handleEdit(linea)} className="text-slate-500 hover:text-white transition-colors p-2" title="Editar">
                     <span className="material-symbols-outlined text-sm">edit</span>
                   </button>
+                  <button
+                    onClick={() => despacharDesdeLínea(linea)}
+                    disabled={savingViaje || linea.personal.length === 0}
+                    title="Despachar turno — activa el GPS para el chofer"
+                    className="flex items-center gap-1 px-3 py-1.5 bg-lazdin-emerald/10 text-lazdin-emerald hover:bg-lazdin-emerald hover:text-slate-900 border border-lazdin-emerald/30 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <span className="material-symbols-outlined text-sm">send</span>
+                    Despachar
+                  </button>
                   <button onClick={() => eliminarLinea(linea.id)} className="text-slate-600 hover:text-red-400 transition-colors p-2" title="Eliminar Línea">
                     <span className="material-symbols-outlined text-sm">delete</span>
                   </button>
@@ -446,6 +587,122 @@ export default function LineasPage() {
           ))}
         </div>
       </div>
+      )} {/* end TAB LÍNEAS */}
+
+      {/* TAB DESPACHO */}
+      {activeTab === 'despacho' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Formulario nuevo viaje */}
+          <div className="lg:col-span-1">
+            <form onSubmit={despacharViaje} className="bg-lazdin-surface border border-slate-800 rounded-xl p-6 shadow-xl space-y-4">
+              <h3 className="text-lg font-bold flex items-center gap-2">
+                <span className="material-symbols-outlined text-lazdin-emerald">add_circle</span>
+                Nuevo Viaje Especial
+              </h3>
+              <div>
+                <label className="text-xs font-bold text-slate-400 uppercase">Chofer *</label>
+                <select required value={formViaje.chofer_id} onChange={e => setFormViaje({...formViaje, chofer_id: e.target.value})} className="form-field mt-1">
+                  <option value="">Seleccionar chofer...</option>
+                  {choferes.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-bold text-slate-400 uppercase">Vehículo *</label>
+                <select required value={formViaje.vehiculo_id} onChange={e => setFormViaje({...formViaje, vehiculo_id: e.target.value})} className="form-field mt-1">
+                  <option value="">Seleccionar vehículo...</option>
+                  {todosVehiculos.map(v => <option key={v.id} value={v.id}>{v.patente} — {v.marca} {v.modelo}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-bold text-slate-400 uppercase">Origen *</label>
+                <input required value={formViaje.origen} onChange={e => setFormViaje({...formViaje, origen: e.target.value})} className="form-field mt-1" placeholder="Ej: Planta Buenos Aires" />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-slate-400 uppercase">Destino *</label>
+                <input required value={formViaje.destino} onChange={e => setFormViaje({...formViaje, destino: e.target.value})} className="form-field mt-1" placeholder="Ej: Puerto Zárate" />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-slate-400 uppercase">Cliente / Referencia</label>
+                <input value={formViaje.cliente} onChange={e => setFormViaje({...formViaje, cliente: e.target.value})} className="form-field mt-1" placeholder="Ej: Empresa XYZ" />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-slate-400 uppercase flex items-center justify-between">
+                  Asignación Extra ($)
+                  <span className="text-[9px] font-normal text-slate-500 lowercase bg-slate-800 px-2 py-0.5 rounded">Opcional</span>
+                </label>
+                <div className="relative mt-1">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">$</span>
+                  <input type="number" min="0" step="0.01" value={formViaje.tarifa} onChange={e => setFormViaje({...formViaje, tarifa: e.target.value})} className="form-field pl-8" placeholder="0.00" />
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-bold text-slate-400 uppercase">Notas</label>
+                <textarea rows="2" value={formViaje.notas} onChange={e => setFormViaje({...formViaje, notas: e.target.value})} className="form-field mt-1" placeholder="Instrucciones especiales..." />
+              </div>
+              <button type="submit" disabled={savingViaje} className="btn-primary w-full flex items-center justify-center gap-2">
+                <span className="material-symbols-outlined text-sm">send</span>
+                {savingViaje ? 'Despachando...' : 'Despachar Viaje'}
+              </button>
+            </form>
+          </div>
+
+          {/* Lista de viajes activos */}
+          <div className="lg:col-span-2">
+            <div className="bg-lazdin-surface border border-slate-800 rounded-xl overflow-hidden shadow-xl">
+              <div className="p-4 border-b border-slate-800 bg-slate-900/50 flex items-center justify-between">
+                <h3 className="font-bold flex items-center gap-2">
+                  <span className="material-symbols-outlined text-lazdin-emerald text-sm">local_shipping</span>
+                  Viajes Activos
+                </h3>
+                <button onClick={cargarViajes} className="text-xs text-slate-400 hover:text-white flex items-center gap-1 transition-colors">
+                  <span className="material-symbols-outlined text-sm">refresh</span>
+                  Actualizar
+                </button>
+              </div>
+              {loadingViajes ? (
+                <div className="p-8 text-center text-slate-500 text-sm">Cargando...</div>
+              ) : viajes.length === 0 ? (
+                <div className="p-8 text-center text-slate-500 text-sm">
+                  <span className="material-symbols-outlined text-4xl text-slate-700 block mb-2">local_shipping</span>
+                  No hay viajes activos en este momento.
+                </div>
+              ) : (
+                <div className="divide-y divide-slate-800">
+                  {viajes.map(v => (
+                    <div key={v.id} className="p-4 flex items-center justify-between hover:bg-slate-800/20 transition-colors">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-1">
+                          <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
+                            v.estado === 'en_ruta' ? 'bg-emerald-900/50 text-lazdin-emerald animate-pulse' :
+                            v.estado === 'pendiente' ? 'bg-amber-900/50 text-amber-400' : 'bg-slate-800 text-slate-400'
+                          }`}>
+                            {v.estado === 'en_ruta' ? '🟢 En Ruta' : v.estado === 'pendiente' ? '🟡 Pendiente' : v.estado}
+                          </span>
+                          <span className="text-[10px] text-slate-500 uppercase font-bold">{v.tipo === 'linea' ? 'Turno de Línea' : 'Viaje Especial'}</span>
+                        </div>
+                        <p className="text-sm font-bold text-white">{v.chofer?.nombre || 'Sin chofer'} — <span className="text-slate-400 font-mono text-xs">{v.vehiculo?.patente || '—'}</span></p>
+                        <p className="text-xs text-slate-400 mt-0.5">
+                          <span className="material-symbols-outlined text-[12px] align-middle">trip_origin</span> {v.origen}
+                          {v.destino && <> → <span className="material-symbols-outlined text-[12px] align-middle">pin_drop</span> {v.destino}</>}
+                        </p>
+                        {v.cliente && <p className="text-xs text-slate-500 mt-0.5">Cliente: {v.cliente}</p>}
+                      </div>
+                      <button
+                        onClick={() => finalizarViaje(v.id)}
+                        className="ml-4 flex items-center gap-1 px-3 py-1.5 bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white border border-red-500/20 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all"
+                      >
+                        <span className="material-symbols-outlined text-sm">stop_circle</span>
+                        Finalizar
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )} {/* end TAB DESPACHO */}
+
     </div>
   )
 }

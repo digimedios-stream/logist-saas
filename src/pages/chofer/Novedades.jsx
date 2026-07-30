@@ -6,7 +6,7 @@ import { useTheme } from '@/contexts/ThemeContext'
 import { formatFechaHora } from '@/lib/utils'
 import { saveOfflineRecord, STORES } from '@/utils/offlineStorage'
 export default function ChoferNovedades() {
-  const { choferData, vehiculoAsignado, loading: authLoading } = useAuth()
+  const { choferData, vehiculoAsignado, empresaData, loading: authLoading } = useAuth()
   const { tema } = useTheme()
   const navigate = useNavigate()
   const fileInputRef = useRef(null)
@@ -77,6 +77,7 @@ export default function ChoferNovedades() {
     try {
       if (!navigator.onLine) {
         const payload = {
+          empresa_id: empresaData?.id,
           chofer_id: choferData.id,
           vehiculo_id: vehiculoAsignado?.id,
           turno_id: turnoActivo?.id,
@@ -116,6 +117,7 @@ export default function ChoferNovedades() {
         foto_url = publicUrl
       }
       const { data, error: insError } = await supabase.from('novedades').insert({
+        empresa_id: empresaData?.id,
         chofer_id: choferData.id,
         vehiculo_id: vehiculoAsignado?.id,
         turno_id: turnoActivo?.id,

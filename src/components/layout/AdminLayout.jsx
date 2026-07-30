@@ -17,7 +17,6 @@ const ALL_NAV_ITEMS = [
   // ── Con módulo requerido ────────────────────────────────
   { to: '/admin/novedades',      icon: 'notifications_active', label: 'Novedades',      modulo: 'novedades' },
   { to: '/admin/lineas',         icon: 'route',               label: 'Líneas / Rutas',  modulo: 'lineas' },
-  { to: '/admin/adicionales',    icon: 'local_mall',          label: 'Adicionales',     modulo: 'adicionales' },
   { to: '/admin/combustible',    icon: 'local_gas_station',   label: 'Combustible',     modulo: 'combustible' },
   { to: '/admin/mecanicos',      icon: 'engineering',         label: 'Mecánicos',       modulo: 'mecanicos' },
   { to: '/admin/seguros',        icon: 'shield',              label: 'Seguros',         modulo: 'seguros' },
