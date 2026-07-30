@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/contexts/AuthContext'
 import { formatFechaCorta, formatFechaHora, formatMoneda } from '@/lib/utils'
 
 export default function AdicionalesAdmin() {
+  const { empresaData } = useAuth()
   const [adicionales, setAdicionales] = useState([])
   const [choferes, setChoferes] = useState([])
   const [loading, setLoading] = useState(true)
@@ -71,6 +73,7 @@ export default function AdicionalesAdmin() {
     try {
       // Limpiar datos y asegurar tiposCorrectos
       const payload = {
+        empresa_id: empresaData?.id,
         descripcion: String(form.descripcion).trim(),
         chofer_id: form.chofer_id || null,
         vehiculo_id: form.vehiculo_id || null,
