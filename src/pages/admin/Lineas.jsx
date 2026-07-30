@@ -90,60 +90,60 @@ export default function LineasPage() {
 
   async function cargarLineas() {
     try {
-      const { data } = await supabase
+      // Consulta simple y directa - sin joins complejos que fallan por FK ambiguas
+      const { data: lineasData, error: lineasError } = await supabase
         .from('lineas')
-        .select(`
-          *,
-          vehiculos:vehiculos (
-            id, 
-            patente,
-            asignaciones:asignaciones_vehiculo_chofer(
-              id,
-              activo,
-              chofer:choferes(nombre)
-            )
-          ),
-          turnos:turnos (
-            id,
-            activo,
-            fecha_inicio,
-            fecha_fin,
-            chofer:choferes (
-              nombre
-            ),
-            vehiculo:vehiculos (
-              patente
-            )
-          )
-        `)
+        .select('*')
         .order('nombre')
-      
-      // Filtrar solo asignaciones activas para cada vehículo y procesar turnos
-      const lineasProcesadas = (data || []).map(l => {
-        const turnoActivo = l.turnos?.find(t => t.activo === true)
-        
-        const turnosFinalizados = l.turnos
-          ?.filter(t => !t.activo && t.fecha_fin)
-          .sort((a, b) => new Date(b.fecha_fin) - new Date(a.fecha_fin))
-        const ultimoTurno = turnosFinalizados && turnosFinalizados.length > 0 ? turnosFinalizados[0] : null
 
-        return {
-          ...l,
-          turnoActivo,
-          ultimoTurno,
-          personal: l.vehiculos
-            ?.map(v => ({
-              id: v.id,
-              patente: v.patente,
-              // 👥 Combinamos todos los choferes activos si hay más de uno
-              chofer: v.asignaciones?.filter(a => a.activo).map(a => a.chofer?.nombre).join(' / ') || 'Sin Chofer'
-            }))
-            .filter(p => p.patente) || []
-        }
+      if (lineasError) throw lineasError
+
+      // Cargar vehículos vinculados a líneas
+      const { data: vehiculosData } = await supabase
+        .from('vehiculos')
+        .select('id, patente, linea_principal_id')
+        .eq('activo', true)
+        .not('linea_principal_id', 'is', null)
+
+      // Cargar choferes asignados activos
+      const { data: asignacionesData } = await supabase
+        .from('asignaciones_vehiculo_chofer')
+        .select('vehiculo_id, chofer:choferes(nombre)')
+        .eq('activo', true)
+
+      // Cargar turnos activos
+      const { data: turnosData } = await supabase
+        .from('turnos')
+        .select('id, activo, fecha_inicio, fecha_fin, linea_id, chofer:choferes(nombre), vehiculo:vehiculos(patente)')
+
+      // Procesar y combinar en JS (sin depender de FK de Supabase)
+      const lineasProcesadas = (lineasData || []).map(l => {
+        const vehiculosLinea = (vehiculosData || []).filter(v => v.linea_principal_id === l.id)
+        const turnosLinea = (turnosData || []).filter(t => t.linea_id === l.id)
+
+        const turnoActivo = turnosLinea.find(t => t.activo === true)
+        const turnosFinalizados = turnosLinea
+          .filter(t => !t.activo && t.fecha_fin)
+          .sort((a, b) => new Date(b.fecha_fin) - new Date(a.fecha_fin))
+        const ultimoTurno = turnosFinalizados.length > 0 ? turnosFinalizados[0] : null
+
+        const personal = vehiculosLinea.map(v => {
+          const asigs = (asignacionesData || []).filter(a => a.vehiculo_id === v.id)
+          return {
+            id: v.id,
+            patente: v.patente,
+            chofer: asigs.map(a => a.chofer?.nombre).filter(Boolean).join(' / ') || 'Sin Chofer'
+          }
+        })
+
+        return { ...l, turnoActivo, ultimoTurno, personal }
       })
 
       setLineas(lineasProcesadas)
-    } catch (err) { console.error('Error cargando líneas:', err) }
+    } catch (err) {
+      console.error('Error cargando líneas:', err)
+      alert('Error al cargar líneas: ' + err.message)
+    }
     finally { setLoading(false) }
   }
 
