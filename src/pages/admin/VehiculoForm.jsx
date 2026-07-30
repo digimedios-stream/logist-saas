@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/contexts/AuthContext'
 
 export default function VehiculoForm() {
   const { id } = useParams()
   const navigate = useNavigate()
   const isEditing = !!id
+  const { empresaData } = useAuth()
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -141,6 +143,7 @@ export default function VehiculoForm() {
 
       if (!dataToSave.linea_principal_id) dataToSave.linea_principal_id = null
       if (!dataToSave.contrato_vencimiento) dataToSave.contrato_vencimiento = null
+      dataToSave.empresa_id = empresaData?.id
 
       if (isEditing) {
         dataToSave.updated_at = new Date().toISOString()

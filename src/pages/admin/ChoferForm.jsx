@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/contexts/AuthContext'
 
 export default function ChoferForm() {
   const { id } = useParams()
   const navigate = useNavigate()
   const isEditing = !!id
+  const { empresaData } = useAuth()
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -100,7 +102,8 @@ export default function ChoferForm() {
     try {
       const dataToSave = { 
         ...form,
-        licencia_vencimiento: form.licencia_vencimiento || null
+        licencia_vencimiento: form.licencia_vencimiento || null,
+        empresa_id: empresaData?.id
       }
       const vehiculoSeleccionadoId = dataToSave.vehiculo_asignado_id
       delete dataToSave.vehiculo_asignado_id
