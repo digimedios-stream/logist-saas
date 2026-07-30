@@ -19,10 +19,15 @@ export default function VtvRto() {
   async function cargarDatos() {
     try {
       const [resVtvs, resVehiculos] = await Promise.all([
-        supabase.from('vtv_rto').select('*, vehiculo:vehiculos(marca, modelo, patente)').order('fecha_vencimiento', { ascending: true }),
+        supabase.from('vtv_rto').select('*').order('fecha_vencimiento', { ascending: true }),
         supabase.from('vehiculos').select('id, marca, modelo, patente').eq('activo', true)
       ])
-      setVtvs(resVtvs.data || [])
+      const vehiculosMap = Object.fromEntries((resVehiculos.data || []).map(v => [v.id, v]))
+      const vtvsConDatos = (resVtvs.data || []).map(v => ({
+        ...v,
+        vehiculo: vehiculosMap[v.vehiculo_id] || null
+      }))
+      setVtvs(vtvsConDatos)
       setVehiculos(resVehiculos.data || [])
     } catch (err) {
       console.error(err)

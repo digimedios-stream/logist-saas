@@ -34,11 +34,21 @@ export default function Combustible() {
   async function cargarDatos() {
     try {
       const [resCargas, resVeh, resChof] = await Promise.all([
-        supabase.from('cargas_combustible').select('*, vehiculo:vehiculos(marca, modelo, patente), chofer:choferes(nombre)').order('fecha_hora', { ascending: false }),
+        supabase.from('cargas_combustible').select('*').order('fecha_hora', { ascending: false }),
         supabase.from('vehiculos').select('id, marca, modelo, patente, cupo_combustible_mensual').eq('activo', true),
         supabase.from('choferes').select('id, nombre').eq('activo', true)
       ])
-      setCargas(resCargas.data || [])
+
+      // Combinar en JS sin depender de FK
+      const vehiculosMap = Object.fromEntries((resVeh.data || []).map(v => [v.id, v]))
+      const choferesMap = Object.fromEntries((resChof.data || []).map(c => [c.id, c]))
+      const cargasConDatos = (resCargas.data || []).map(c => ({
+        ...c,
+        vehiculo: vehiculosMap[c.vehiculo_id] || null,
+        chofer: choferesMap[c.chofer_id] || null
+      }))
+
+      setCargas(cargasConDatos)
       setVehiculos(resVeh.data || [])
       setChoferes(resChof.data || [])
     } catch (err) {

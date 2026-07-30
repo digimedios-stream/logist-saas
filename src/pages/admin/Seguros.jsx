@@ -19,10 +19,15 @@ export default function Seguros() {
   async function cargarDatos() {
     try {
       const [resSeguros, resVehiculos] = await Promise.all([
-        supabase.from('seguros').select('*, vehiculo:vehiculos(marca, modelo, patente)').order('fecha_vencimiento', { ascending: true }),
+        supabase.from('seguros').select('*').order('fecha_vencimiento', { ascending: true }),
         supabase.from('vehiculos').select('id, marca, modelo, patente').eq('activo', true)
       ])
-      setSeguros(resSeguros.data || [])
+      const vehiculosMap = Object.fromEntries((resVehiculos.data || []).map(v => [v.id, v]))
+      const segurosConDatos = (resSeguros.data || []).map(s => ({
+        ...s,
+        vehiculo: vehiculosMap[s.vehiculo_id] || null
+      }))
+      setSeguros(segurosConDatos)
       setVehiculos(resVehiculos.data || [])
     } catch (err) {
       console.error(err)

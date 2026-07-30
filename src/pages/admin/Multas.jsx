@@ -20,11 +20,18 @@ export default function Multas() {
   async function cargarDatos() {
     try {
       const [resMultas, resVeh, resChof] = await Promise.all([
-        supabase.from('multas').select('*, vehiculo:vehiculos(marca, modelo, patente), chofer:choferes(nombre)').order('fecha', { ascending: false }),
+        supabase.from('multas').select('*').order('fecha', { ascending: false }),
         supabase.from('vehiculos').select('id, marca, modelo, patente').eq('activo', true),
         supabase.from('choferes').select('id, nombre').eq('activo', true)
       ])
-      setMultas(resMultas.data || [])
+      const vehiculosMap = Object.fromEntries((resVeh.data || []).map(v => [v.id, v]))
+      const choferesMap = Object.fromEntries((resChof.data || []).map(c => [c.id, c]))
+      const multasConDatos = (resMultas.data || []).map(m => ({
+        ...m,
+        vehiculo: vehiculosMap[m.vehiculo_id] || null,
+        chofer: choferesMap[m.chofer_id] || null
+      }))
+      setMultas(multasConDatos)
       setVehiculos(resVeh.data || [])
       setChoferes(resChof.data || [])
     } catch (err) {

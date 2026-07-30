@@ -20,11 +20,18 @@ export default function Mantenimientos() {
   async function cargarDatos() {
     try {
       const [resMant, resVeh, resMec] = await Promise.all([
-        supabase.from('mantenimientos').select('*, vehiculo:vehiculos(marca, modelo, patente), mecanico:mecanicos(nombre)').order('fecha', { ascending: false }),
+        supabase.from('mantenimientos').select('*').order('fecha', { ascending: false }),
         supabase.from('vehiculos').select('id, marca, modelo, patente').eq('activo', true),
         supabase.from('mecanicos').select('id, nombre').eq('activo', true)
       ])
-      setMantenimientos(resMant.data || [])
+      const vehiculosMap = Object.fromEntries((resVeh.data || []).map(v => [v.id, v]))
+      const mecanicosMap = Object.fromEntries((resMec.data || []).map(m => [m.id, m]))
+      const mantenimientosConDatos = (resMant.data || []).map(m => ({
+        ...m,
+        vehiculo: vehiculosMap[m.vehiculo_id] || null,
+        mecanico: mecanicosMap[m.mecanico_id] || null
+      }))
+      setMantenimientos(mantenimientosConDatos)
       setVehiculos(resVeh.data || [])
       setMecanicos(resMec.data || [])
     } catch (err) {
