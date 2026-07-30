@@ -6,7 +6,7 @@ import { useTheme } from '@/contexts/ThemeContext'
 import { formatFechaHora } from '@/lib/utils'
 
 export default function ChoferTurno() {
-  const { choferData, vehiculoAsignado, loading: authLoading } = useAuth()
+  const { choferData, vehiculoAsignado, empresaData, loading: authLoading } = useAuth()
   const { tema } = useTheme()
   const navigate = useNavigate()
 
@@ -164,6 +164,7 @@ export default function ChoferTurno() {
         const { data, error: insError } = await supabase
           .from('turnos')
           .insert({
+            empresa_id: empresaData?.id,
             chofer_id: choferData.id,
             vehiculo_id: vehiculoAsignado.id,
             linea_id: vehiculoAsignado.linea_principal_id,
