@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { formatFechaCorta, formatMoneda } from '@/lib/utils'
+import { useAuth } from '@/contexts/AuthContext'
 
 export default function Multas() {
+  const { empresaData } = useAuth()
   const [multas, setMultas] = useState([])
   const [vehiculos, setVehiculos] = useState([])
   const [choferes, setChoferes] = useState([])
@@ -84,7 +86,8 @@ export default function Multas() {
         acta: String(form.acta || '').trim() || null,
         motivo: String(form.motivo || '').trim(),
         monto: parseFloat(form.monto) || 0,
-        estado: form.estado || 'pendiente'
+        estado: form.estado || 'pendiente',
+        empresa_id: empresaData?.id
       }
 
       console.log('Guardando Multa:', payload)

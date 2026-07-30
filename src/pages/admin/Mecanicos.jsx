@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/contexts/AuthContext'
 
 export default function Mecanicos() {
+  const { empresaData } = useAuth()
   const [mecanicos, setMecanicos] = useState([])
   const [loading, setLoading] = useState(true)
   const [isEditing, setIsEditing] = useState(false)
@@ -52,6 +54,7 @@ export default function Mecanicos() {
     setSaving(true)
     try {
       const { id, ...dataToSave } = form
+      dataToSave.empresa_id = empresaData?.id
       if (id) {
         await supabase.from('mecanicos').update(dataToSave).eq('id', id)
       } else {

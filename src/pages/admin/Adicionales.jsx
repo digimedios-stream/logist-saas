@@ -22,11 +22,18 @@ export default function AdicionalesAdmin() {
   async function cargarDatos() {
     try {
       const [resAdic, resChof, resVeh] = await Promise.all([
-        supabase.from('adicionales').select('*, chofer:choferes(nombre), vehiculo:vehiculos(marca, modelo, patente)').order('fecha_inicio', { ascending: false }),
+        supabase.from('adicionales').select('*').order('fecha_inicio', { ascending: false }),
         supabase.from('choferes').select('id, nombre').eq('activo', true),
         supabase.from('vehiculos').select('id, marca, modelo, patente').eq('activo', true)
       ])
-      setAdicionales(resAdic.data || [])
+      const vehiculosMap = Object.fromEntries((resVeh.data || []).map(v => [v.id, v]))
+      const choferesMap = Object.fromEntries((resChof.data || []).map(c => [c.id, c]))
+      const adicConDatos = (resAdic.data || []).map(a => ({
+        ...a,
+        vehiculo: vehiculosMap[a.vehiculo_id] || null,
+        chofer: choferesMap[a.chofer_id] || null
+      }))
+      setAdicionales(adicConDatos)
       setChoferes(resChof.data || [])
       setVehiculos(resVeh.data || [])
     } catch (err) {

@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { formatFechaCorta, formatMoneda } from '@/lib/utils'
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch'
+import { useAuth } from '@/contexts/AuthContext'
 
 export default function Combustible() {
+  const { empresaData } = useAuth()
   const [cargas, setCargas] = useState([])
   const [vehiculos, setVehiculos] = useState([])
   const [choferes, setChoferes] = useState([])
@@ -142,7 +144,8 @@ export default function Combustible() {
         precio_total: form.precio_total ? parseFloat(form.precio_total) : null,
         odometro_actual: form.odometro_actual ? parseFloat(form.odometro_actual) : null,
         estacion: form.estacion,
-        tipo_combustible: form.tipo_combustible
+        tipo_combustible: form.tipo_combustible,
+        empresa_id: empresaData?.id
       }
 
       let error

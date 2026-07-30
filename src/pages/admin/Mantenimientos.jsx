@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { formatFechaCorta, formatMoneda } from '@/lib/utils'
+import { useAuth } from '@/contexts/AuthContext'
 
 export default function Mantenimientos() {
+  const { empresaData } = useAuth()
   const [mantenimientos, setMantenimientos] = useState([])
   const [vehiculos, setVehiculos] = useState([])
   const [mecanicos, setMecanicos] = useState([])
@@ -85,7 +87,8 @@ export default function Mantenimientos() {
         costo: dataToSave.costo ? parseFloat(dataToSave.costo) : null,
         kilometraje: dataToSave.kilometraje ? parseInt(dataToSave.kilometraje) : null,
         proximo_km: dataToSave.proximo_km ? parseInt(dataToSave.proximo_km) : null,
-        mecanico_id: dataToSave.mecanico_id || null
+        mecanico_id: dataToSave.mecanico_id || null,
+        empresa_id: empresaData?.id
       }
 
       if (id) {

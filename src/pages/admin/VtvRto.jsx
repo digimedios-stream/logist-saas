@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { formatFechaCorta, estadoVencimiento } from '@/lib/utils'
+import { useAuth } from '@/contexts/AuthContext'
 
 export default function VtvRto() {
+  const { empresaData } = useAuth()
   const [vtvs, setVtvs] = useState([])
   const [vehiculos, setVehiculos] = useState([])
   const [loading, setLoading] = useState(true)
@@ -74,6 +76,7 @@ export default function VtvRto() {
       const { id, vehiculo, ...dataToSave } = form
 
       if (!dataToSave.fecha_realizacion) dataToSave.fecha_realizacion = null
+      dataToSave.empresa_id = empresaData?.id
 
       if (id) {
         const { error } = await supabase.from('vtv_rto').update(dataToSave).eq('id', id)
