@@ -48,7 +48,7 @@ export default function Login() {
       <div className="absolute bottom-[-10%] left-[-10%] w-[30%] h-[30%] bg-blue-500/10 blur-[100px] rounded-full pointer-events-none" />
 
       {/* Login Container */}
-      <main className="relative z-10 w-full max-w-md px-6">
+      <main className="relative z-10 w-full max-w-md px-6 flex-1 flex flex-col justify-center">
         <div className="bg-lazdin-surface border border-lazdin-outline-variant/30 rounded-xl shadow-2xl p-8 backdrop-blur-xl">
           <div className="flex flex-col items-center mb-10">
             <div className="w-full max-w-[280px] rounded-lg flex items-center justify-center overflow-hidden">
