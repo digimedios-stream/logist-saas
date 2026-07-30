@@ -29,6 +29,7 @@ import Usuarios from '@/pages/admin/Usuarios'
 import Liquidaciones from '@/pages/admin/Liquidaciones'
 import Documentos from '@/pages/admin/Documentos'
 import AdminNovedades from '@/pages/admin/Novedades'
+import MapaVisibilidad from '@/pages/admin/MapaVisibilidad'
 
 // Chofer Pages
 import ChoferDashboard from '@/pages/chofer/Dashboard'
@@ -37,6 +38,7 @@ import ChoferCombustible from '@/pages/chofer/Combustible'
 import ChoferNovedades from '@/pages/chofer/Novedades'
 import ChoferAdicionales from '@/pages/chofer/Adicionales'
 import ChoferMantenimientos from '@/pages/chofer/Mantenimientos'
+import TrackingViaje from '@/pages/chofer/TrackingViaje'
 
 // SuperAdmin Pages
 import SuperAdminDashboard from '@/pages/superadmin/Dashboard'
@@ -161,6 +163,7 @@ export default function App() {
           <Route path="mecanicos"     element={<ModuleRoute modulo="mecanicos"><Mecanicos /></ModuleRoute>} />
           <Route path="vtv"           element={<ModuleRoute modulo="vtv"><VtvRto /></ModuleRoute>} />
           <Route path="reportes"      element={<ModuleRoute modulo="reportes"><Reportes /></ModuleRoute>} />
+          <Route path="mapa"          element={<MapaVisibilidad />} />
           <Route path="logs"          element={<ModuleRoute modulo="logs"><LogsActividad /></ModuleRoute>} />
           <Route path="liquidaciones" element={<ModuleRoute modulo="liquidaciones"><Liquidaciones /></ModuleRoute>} />
           <Route path="documentos"    element={<ModuleRoute modulo="documentos"><Documentos /></ModuleRoute>} />
@@ -182,6 +185,7 @@ export default function App() {
           <Route path="novedades" element={<ChoferNovedades />} />
           <Route path="adicionales" element={<ChoferAdicionales />} />
           <Route path="mantenimientos" element={<ChoferMantenimientos />} />
+          <Route path="tracking" element={<TrackingViaje />} />
         </Route>
 
         {/* ── Rutas SuperAdmin ────────────────────────────────── */}

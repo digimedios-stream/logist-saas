@@ -2,13 +2,14 @@ import { useState } from 'react'
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTheme } from '@/contexts/ThemeContext'
+import iconoImg from '@/assets/icono.png'
 
 // Todos los ítems del menú posibles.
 // `modulo`: si está definido, el ítem solo aparece si ese módulo está activo para la empresa.
 // `soloSuperAdmin`: solo visible para el rol superadmin.
 const ALL_NAV_ITEMS = [
-  // ── Core (siempre visibles para admin) ─────────────────
   { to: '/admin',                icon: 'dashboard',           label: 'Panel Control',   end: true },
+  { to: '/admin/mapa',           icon: 'map',                 label: 'Mapa Rutas' },
   { to: '/admin/vehiculos',      icon: 'local_shipping',      label: 'Flota' },
   { to: '/admin/choferes',       icon: 'group',               label: 'Choferes' },
   { to: '/admin/mantenimientos', icon: 'build',               label: 'Mantenimientos' },
@@ -74,11 +75,11 @@ export default function AdminLayout() {
         {/* Logo area */}
         <div className={`px-6 mb-6 ${!sidebarOpen && 'md:px-4'}`}>
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-lazdin-primary-container rounded-lg flex items-center justify-center flex-shrink-0 border border-lazdin-outline-variant/20 shadow-lg overflow-hidden">
+            <div className="w-9 h-9 bg-lazdin-primary-container rounded-lg flex items-center justify-center flex-shrink-0 shadow-lg overflow-hidden p-1">
               {empresaData?.logo_url ? (
-                <img src={empresaData.logo_url} alt={nombreEmpresa} className="w-full h-full object-cover" />
+                <img src={empresaData.logo_url} alt={nombreEmpresa} className="w-full h-full object-cover rounded-md" />
               ) : (
-                <span className="material-symbols-outlined text-lazdin-emerald text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>local_shipping</span>
+                <img src={iconoImg} alt="Movix" className="w-full h-full object-contain" />
               )}
             </div>
             {(sidebarOpen || (window.innerWidth < 768)) && (

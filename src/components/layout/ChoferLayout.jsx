@@ -3,6 +3,7 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useSync } from '@/hooks/useSync'
+import iconoImg from '@/assets/icono.png'
 
 const NAV_ITEMS = [
   { to: '/chofer', icon: 'dashboard', label: 'Inicio', end: true },
@@ -11,6 +12,7 @@ const NAV_ITEMS = [
   { to: '/chofer/novedades', icon: 'report', label: 'Novedades' },
   { to: '/chofer/adicionales', icon: 'add_task', label: 'Adicionales' },
   { to: '/chofer/mantenimientos', icon: 'build', label: 'Mantenimientos' },
+  { to: '/chofer/tracking', icon: 'location_on', label: 'Rastreo' },
 ]
 
 export default function ChoferLayout() {
@@ -50,8 +52,8 @@ export default function ChoferLayout() {
             </button>
             {/* Logo solo para propios */}
             {tema.showLogo && (
-              <div className="w-8 h-8 bg-lazdin-primary-container rounded-lg flex items-center justify-center border border-lazdin-outline-variant/20">
-                <span className="material-symbols-outlined text-lazdin-emerald text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>local_shipping</span>
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center overflow-hidden p-0.5">
+                <img src={iconoImg} alt="Movix" className="w-full h-full object-contain" />
               </div>
             )}
             <span className={`text-lg font-bold tracking-tighter ${esTercero ? 'text-slate-200' : 'text-lazdin-emerald'}`}>

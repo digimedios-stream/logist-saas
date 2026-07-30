@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
+import logoImg from '@/assets/logo.png'
 
 export default function Login() {
-   const [email, setEmail] = useState('')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
@@ -49,22 +50,10 @@ export default function Login() {
       {/* Login Container */}
       <main className="relative z-10 w-full max-w-md px-6">
         <div className="bg-lazdin-surface border border-lazdin-outline-variant/30 rounded-xl shadow-2xl p-8 backdrop-blur-xl">
-          {/* Logo */}
           <div className="flex flex-col items-center mb-10">
-            <div className="w-16 h-16 bg-lazdin-primary-container rounded-lg flex items-center justify-center mb-4 shadow-inner border border-lazdin-outline-variant/20">
-              <span
-                className="material-symbols-outlined text-lazdin-emerald text-4xl"
-                style={{ fontVariationSettings: "'FILL' 1" }}
-              >
-                local_shipping
-              </span>
+            <div className="w-full max-w-[280px] rounded-lg flex items-center justify-center overflow-hidden">
+              <img src={logoImg} alt="Movix Logo" className="w-full h-auto object-contain" />
             </div>
-            <h1 className="font-headline text-2xl font-black tracking-tighter text-lazdin-on-surface uppercase">
-              Logística
-            </h1>
-            <p className="text-lazdin-on-surface-variant text-sm mt-1">
-              Gestión de Carga Inteligente
-            </p>
           </div>
 
           {/* Error message */}

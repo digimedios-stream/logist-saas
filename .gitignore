@@ -30,3 +30,7 @@ stitch logística/
 
 # temporary diagnostic scripts
 scratch/
+
+.vercel
+.env*
+supabase/.temp/
