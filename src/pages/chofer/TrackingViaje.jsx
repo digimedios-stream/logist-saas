@@ -71,39 +71,63 @@ export default function TrackingViaje() {
     setTracking(true)
     setErrorGps('')
 
+    // Calentamiento: pedir una posición inicial primero para despertar el GPS
     try {
-      watchId.current = await Geolocation.watchPosition(
-        {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 0
-        },
-        async (pos, err) => {
-          if (err) {
-            console.error('Error GPS:', err)
-            setErrorGps('Error al obtener la ubicación.')
-            return
-          }
-          if (pos) {
-            const { latitude, longitude, speed, heading, accuracy } = pos.coords
-            setUbicacionActual({ latitude, longitude, accuracy })
-
-            // Guardar en Supabase
-            await supabase.from('ubicaciones_viaje').insert([{
-              viaje_id: viajeId,
-              latitud: latitude,
-              longitud: longitude,
-              velocidad: speed,
-              heading: heading,
-              precision_gps: accuracy
-            }])
-          }
-        }
-      )
-    } catch (err) {
-      console.error('Error al iniciar watchPosition', err)
-      setErrorGps('Error al acceder al sensor GPS.')
+      await Geolocation.getCurrentPosition({
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 10000
+      })
+    } catch (e) {
+      console.warn('Calentamiento GPS falló, continuando igual:', e)
     }
+
+    const iniciarWatch = async (highAccuracy) => {
+      try {
+        watchId.current = await Geolocation.watchPosition(
+          {
+            enableHighAccuracy: highAccuracy,
+            timeout: 30000,
+            maximumAge: 5000
+          },
+          async (pos, err) => {
+            if (err) {
+              console.error('Error GPS watchPosition:', err)
+              // Si falló con alta precisión, reintentar con baja precisión
+              if (highAccuracy) {
+                console.warn('Reintentando GPS con baja precisión...')
+                await Geolocation.clearWatch({ id: watchId.current })
+                watchId.current = null
+                iniciarWatch(false)
+              } else {
+                setErrorGps('Error al obtener la ubicación. Verificá que el GPS esté activado.')
+              }
+              return
+            }
+            if (pos) {
+              const { latitude, longitude, speed, heading, accuracy } = pos.coords
+              setUbicacionActual({ latitude, longitude, accuracy })
+              setErrorGps('') // Limpiar error si hay una posición válida
+
+              // Guardar en Supabase
+              await supabase.from('ubicaciones_viaje').insert([{
+                viaje_id: viajeId,
+                latitud: latitude,
+                longitud: longitude,
+                velocidad: speed,
+                heading: heading,
+                precision_gps: accuracy
+              }])
+            }
+          }
+        )
+      } catch (err) {
+        console.error('Error al iniciar watchPosition', err)
+        setErrorGps('Error al acceder al sensor GPS.')
+      }
+    }
+
+    await iniciarWatch(true)
   }
 
   const detenerTracking = async () => {
