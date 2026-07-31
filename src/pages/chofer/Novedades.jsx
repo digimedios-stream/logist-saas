@@ -77,7 +77,7 @@ export default function ChoferNovedades() {
     try {
       if (!navigator.onLine) {
         const payload = {
-          empresa_id: empresaData?.id,
+          empresa_id: empresaData?.id || choferData.empresa_id,
           chofer_id: choferData.id,
           vehiculo_id: vehiculoAsignado?.id,
           turno_id: turnoActivo?.id,
@@ -117,7 +117,7 @@ export default function ChoferNovedades() {
         foto_url = publicUrl
       }
       const { data, error: insError } = await supabase.from('novedades').insert({
-        empresa_id: empresaData?.id,
+        empresa_id: empresaData?.id || choferData.empresa_id,
         chofer_id: choferData.id,
         vehiculo_id: vehiculoAsignado?.id,
         turno_id: turnoActivo?.id,
