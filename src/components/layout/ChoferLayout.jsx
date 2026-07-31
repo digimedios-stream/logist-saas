@@ -27,6 +27,33 @@ export default function ChoferLayout() {
   useEffect(() => {
     if (!choferData?.id) return
 
+    // Funcionalidad de chequeo de viajes
+    let ultimosViajes = []
+    
+    const checkViajesNuevos = async () => {
+      const { data } = await supabase
+        .from('viajes')
+        .select('id')
+        .eq('chofer_id', choferData.id)
+        .order('created_at', { ascending: false })
+      
+      if (data) {
+        const ids = data.map(v => v.id)
+        // Si hay un ID nuevo que no estaba en la lista anterior
+        if (ultimosViajes.length > 0 && ids.some(id => !ultimosViajes.includes(id))) {
+          setNuevoViajeAlert(true)
+          if (navigator.vibrate) navigator.vibrate([200, 100, 200])
+        }
+        ultimosViajes = ids
+      }
+    }
+
+    // Chequeo inicial
+    checkViajesNuevos()
+
+    // Fallback Polling (15s)
+    const intervalId = setInterval(checkViajesNuevos, 15000)
+
     const viajesSub = supabase.channel('realtime_chofer_viajes')
       .on('postgres_changes', {
         event: 'INSERT',
@@ -35,12 +62,12 @@ export default function ChoferLayout() {
         filter: `chofer_id=eq.${choferData.id}`
       }, (payload) => {
         setNuevoViajeAlert(true)
-        // Opcional: Sonido o vibración si está en Android
         if (navigator.vibrate) navigator.vibrate([200, 100, 200])
       })
       .subscribe()
 
     return () => {
+      clearInterval(intervalId)
       supabase.removeChannel(viajesSub)
     }
   }, [choferData])

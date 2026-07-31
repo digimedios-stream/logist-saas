@@ -22,6 +22,11 @@ export default function MapaVisibilidad() {
   useEffect(() => {
     cargarDatos()
 
+    // Fallback: Polling cada 10 segundos en caso de que los WebSockets estén bloqueados (ej. por AdBlockers o firewalls)
+    const intervalId = setInterval(() => {
+      cargarDatos(true) // silent refresh
+    }, 10000)
+
     // Subscripción a Realtime para nuevas ubicaciones
     const ubicacionesSub = supabase.channel('realtime_ubicaciones')
       .on('postgres_changes', {
@@ -41,12 +46,13 @@ export default function MapaVisibilidad() {
       .subscribe()
 
     return () => {
+      clearInterval(intervalId)
       supabase.removeChannel(ubicacionesSub)
     }
   }, [])
 
-  async function cargarDatos() {
-    setLoading(true)
+  async function cargarDatos(silent = false) {
+    if (!silent) setLoading(true)
     try {
       // 1. Obtener viajes activos
       const { data: viajesData } = await supabase
