@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useSync } from '@/hooks/useSync'
 import iconoImg from '@/assets/icono.png'
+import { supabase } from '@/lib/supabase'
 
 const NAV_ITEMS = [
   { to: '/chofer', icon: 'dashboard', label: 'Inicio', end: true },
@@ -19,8 +20,30 @@ export default function ChoferLayout() {
   const { tema, esTercero, nombreMostrar, modoClaro, toggleTemaClaroOscuro } = useTheme()
   const navigate = useNavigate()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [nuevoViajeAlert, setNuevoViajeAlert] = useState(false)
 
   useSync() // Inicializa el listener de sincronización offline
+
+  useEffect(() => {
+    if (!choferData?.id) return
+
+    const viajesSub = supabase.channel('realtime_chofer_viajes')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'viajes',
+        filter: `chofer_id=eq.${choferData.id}`
+      }, (payload) => {
+        setNuevoViajeAlert(true)
+        // Opcional: Sonido o vibración si está en Android
+        if (navigator.vibrate) navigator.vibrate([200, 100, 200])
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(viajesSub)
+    }
+  }, [choferData])
 
   const handleLogout = async () => {
     await logout()
@@ -35,6 +58,22 @@ export default function ChoferLayout() {
           className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-[60] md:hidden animate-in fade-in duration-300"
           onClick={() => setSidebarOpen(false)}
         />
+      )}
+
+      {/* Alerta de Nuevo Viaje Asignado */}
+      {nuevoViajeAlert && (
+        <div className="fixed top-16 left-0 right-0 z-40 bg-emerald-500 text-white px-4 py-3 flex items-center justify-between shadow-lg animate-in slide-in-from-top-2">
+          <div className="flex items-center gap-2 font-bold text-sm">
+            <span className="material-symbols-outlined">map</span>
+            ¡Tienes un nuevo viaje asignado!
+          </div>
+          <button 
+            onClick={() => { setNuevoViajeAlert(false); window.location.reload(); }}
+            className="bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full text-xs font-bold transition-colors"
+          >
+            Actualizar
+          </button>
+        </div>
       )}
 
       {/* Header con branding dinámico */}
