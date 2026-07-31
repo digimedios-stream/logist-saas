@@ -61,6 +61,47 @@ export default function ChoferNovedades() {
     }
   }
 
+  const compressImageToBlob = (file) => {
+    return new Promise((resolve, reject) => {
+      const img = new Image()
+      const objectUrl = URL.createObjectURL(file)
+      
+      img.onload = () => {
+        URL.revokeObjectURL(objectUrl)
+        const canvas = document.createElement('canvas')
+        let width = img.width
+        let height = img.height
+        const max_size = 800
+        if (width > height) {
+          if (width > max_size) {
+            height *= max_size / width
+            width = max_size
+          }
+        } else {
+          if (height > max_size) {
+            width *= max_size / height
+            height = max_size
+          }
+        }
+        canvas.width = width
+        canvas.height = height
+        const ctx = canvas.getContext('2d')
+        ctx.drawImage(img, 0, 0, width, height)
+        
+        canvas.toBlob((blob) => {
+          resolve(blob)
+        }, 'image/jpeg', 0.7)
+      }
+      
+      img.onerror = (err) => {
+        URL.revokeObjectURL(objectUrl)
+        reject(err)
+      }
+      
+      img.src = objectUrl
+    })
+  }
+
   const handleFileChange = (e) => {
     const file = e.target.files[0]
     if (file) {
@@ -75,6 +116,15 @@ export default function ChoferNovedades() {
     setError(null)
 
     try {
+      let fotoAEnviar = foto
+      if (foto) {
+        try {
+          fotoAEnviar = await compressImageToBlob(foto)
+        } catch (e) {
+          console.warn('Fallo la compresión de imagen, enviando original:', e)
+        }
+      }
+
       if (!navigator.onLine) {
         const payload = {
           empresa_id: empresaData?.id || choferData.empresa_id,
@@ -90,7 +140,7 @@ export default function ChoferNovedades() {
         
         await saveOfflineRecord(STORES.NOVEDADES, {
            payload,
-           foto: foto,
+           foto: fotoAEnviar,
         })
         
         setNovedades([{...payload, id: 'temp-'+Date.now(), foto_url: preview}, ...novedades])
@@ -108,7 +158,7 @@ export default function ChoferNovedades() {
         const fileName = `${Date.now()}.${fileExt}`
         const { data, error: upError } = await supabase.storage
           .from('novedades-fotos')
-          .upload(`${choferData.id}/${fileName}`, foto)
+          .upload(`${choferData.id}/${fileName}`, fotoAEnviar)
         
         if (upError) throw upError
         const { data: { publicUrl } } = supabase.storage
