@@ -3,6 +3,18 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { Geolocation } from '@capacitor/geolocation'
 
+// Calcular distancia en metros usando Haversine para filtrar micro-movimientos estáticos
+function getDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371000 // Radio de la tierra en metros
+  const dLat = (lat2 - lat1) * Math.PI / 180
+  const dLon = (lon2 - lon1) * Math.PI / 180
+  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon/2) * Math.sin(dLon/2)
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
+  return R * c
+}
+
 export default function TrackingViaje() {
   const { user } = useAuth()
   const [viajeActivo, setViajeActivo] = useState(null)
@@ -12,6 +24,7 @@ export default function TrackingViaje() {
   const [ubicacionActual, setUbicacionActual] = useState(null)
   
   const watchId = useRef(null)
+  const ultimaCoordenada = useRef(null)
 
   useEffect(() => {
     verificarViajeActivo()
@@ -92,15 +105,32 @@ export default function TrackingViaje() {
         async (pos, err) => {
           if (err) {
             console.warn('Advertencia GPS (transitoria):', err)
-            // No cancelamos el rastreo. El sensor seguirá intentando obtener señal.
-            // Solo notificamos en la interfaz que la señal es inestable.
             setErrorGps('Buscando señal GPS precisa...')
             return
           }
           if (pos) {
             const { latitude, longitude, speed, heading, accuracy } = pos.coords
+
+            // 1. FILTRADO DE PRECISIÓN: Ignorar estimaciones inestables de antenas de red (mayor a 40 metros de margen)
+            if (accuracy > 40) {
+              console.warn('Coordenada ignorada por baja precisión:', accuracy)
+              return
+            }
+
+            // 2. FILTRADO DE MOVIMIENTO: Evitar registrar jitter/rebote estático si se mueve menos de 5 metros
+            if (ultimaCoordenada.current) {
+              const dist = getDistance(
+                ultimaCoordenada.current.latitude,
+                ultimaCoordenada.current.longitude,
+                latitude,
+                longitude
+              )
+              if (dist < 5) return
+            }
+
+            ultimaCoordenada.current = { latitude, longitude }
             setUbicacionActual({ latitude, longitude, accuracy })
-            setErrorGps('') // Limpiar advertencia al recibir una señal válida
+            setErrorGps('') // Limpiar advertencia
 
             // Guardar en Supabase
             await supabase.from('ubicaciones_viaje').insert([{
@@ -124,6 +154,7 @@ export default function TrackingViaje() {
     if (watchId.current !== null) {
       await Geolocation.clearWatch({ id: watchId.current })
       watchId.current = null
+      ultimaCoordenada.current = null
       setTracking(false)
     }
   }
