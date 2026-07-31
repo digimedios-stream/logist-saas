@@ -113,6 +113,28 @@ export default function HistorialViajes() {
     }
   }
 
+  // Eliminar un viaje y su historial en cascada
+  async function eliminarViaje(id) {
+    if (!confirm('¿Estás seguro de eliminar permanentemente este viaje y todo su historial de recorrido GPS? Esta acción no se puede deshacer.')) return
+    
+    setLoading(true)
+    try {
+      const { error } = await supabase
+        .from('viajes')
+        .delete()
+        .eq('id', id)
+      
+      if (error) throw error
+      
+      // Actualizar lista localmente
+      setViajes(prev => prev.filter(v => v.id !== id))
+    } catch (err) {
+      alert('Error al eliminar el viaje: ' + err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   // Filtrado en el cliente
   const viajesFiltrados = viajes.filter(v => {
     if (filtroChofer && v.chofer_id !== filtroChofer) return false
@@ -226,13 +248,20 @@ export default function HistorialViajes() {
                     <td className="px-6 py-4 text-sm text-slate-300">
                       {v.cliente}
                     </td>
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-6 py-4 text-right space-x-2 whitespace-nowrap">
                       <button 
                         onClick={() => verRecorrido(v)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-lazdin-emerald/10 text-lazdin-emerald hover:bg-lazdin-emerald/20 transition-all rounded-lg text-xs font-bold"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-lazdin-emerald/10 text-lazdin-emerald hover:bg-lazdin-emerald/20 transition-all rounded-lg text-xs font-bold align-middle"
                       >
                         <span className="material-symbols-outlined text-sm">map</span>
                         Ver Mapa
+                      </button>
+                      <button 
+                        onClick={() => eliminarViaje(v.id)}
+                        className="inline-flex items-center justify-center w-8 h-8 bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-all rounded-lg align-middle"
+                        title="Eliminar Viaje"
+                      >
+                        <span className="material-symbols-outlined text-sm">delete</span>
                       </button>
                     </td>
                   </tr>

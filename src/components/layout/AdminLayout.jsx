@@ -9,22 +9,21 @@ import iconoImg from '@/assets/icono.png'
 // `soloSuperAdmin`: solo visible para el rol superadmin.
 const ALL_NAV_ITEMS = [
   { to: '/admin',                icon: 'dashboard',           label: 'Panel Control',   end: true },
+  { to: '/admin/lineas',         icon: 'route',               label: 'Líneas / Rutas',  modulo: 'lineas' },
   { to: '/admin/mapa',           icon: 'map',                 label: 'Mapa Rutas' },
   { to: '/admin/historial',      icon: 'history_toggle_off',  label: 'Historial Viajes' },
+  { to: '/admin/novedades',      icon: 'notifications_active', label: 'Novedades',      modulo: 'novedades' },
   { to: '/admin/vehiculos',      icon: 'local_shipping',      label: 'Flota' },
   { to: '/admin/choferes',       icon: 'group',               label: 'Choferes' },
-  { to: '/admin/mantenimientos', icon: 'build',               label: 'Mantenimientos' },
-  { to: '/admin/usuarios',       icon: 'manage_accounts',     label: 'Usuarios' },
-  // ── Con módulo requerido ────────────────────────────────
-  { to: '/admin/novedades',      icon: 'notifications_active', label: 'Novedades',      modulo: 'novedades' },
-  { to: '/admin/lineas',         icon: 'route',               label: 'Líneas / Rutas',  modulo: 'lineas' },
   { to: '/admin/combustible',    icon: 'local_gas_station',   label: 'Combustible',     modulo: 'combustible' },
+  { to: '/admin/mantenimientos', icon: 'build',               label: 'Mantenimientos' },
   { to: '/admin/mecanicos',      icon: 'engineering',         label: 'Mecánicos',       modulo: 'mecanicos' },
   { to: '/admin/seguros',        icon: 'shield',              label: 'Seguros',         modulo: 'seguros' },
   { to: '/admin/vtv',            icon: 'verified',            label: 'VTV / RTO',       modulo: 'vtv' },
   { to: '/admin/multas',         icon: 'gavel',               label: 'Multas',          modulo: 'multas' },
   { to: '/admin/documentos',     icon: 'description',         label: 'Documentos',      modulo: 'documentos' },
   { to: '/admin/liquidaciones',  icon: 'payments',            label: 'Liquidaciones',   modulo: 'liquidaciones' },
+  { to: '/admin/usuarios',       icon: 'manage_accounts',     label: 'Usuarios' },
   { to: '/admin/reportes',       icon: 'analytics',           label: 'Reportes',        modulo: 'reportes' },
   { to: '/admin/logs',           icon: 'history',             label: 'Actividad',       modulo: 'logs' },
 ]
