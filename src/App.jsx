@@ -29,6 +29,7 @@ import Liquidaciones from '@/pages/admin/Liquidaciones'
 import Documentos from '@/pages/admin/Documentos'
 import AdminNovedades from '@/pages/admin/Novedades'
 import MapaVisibilidad from '@/pages/admin/MapaVisibilidad'
+import HistorialViajes from '@/pages/admin/HistorialViajes'
 
 // Chofer Pages
 import ChoferDashboard from '@/pages/chofer/Dashboard'
@@ -161,6 +162,7 @@ export default function App() {
           <Route path="vtv"           element={<ModuleRoute modulo="vtv"><VtvRto /></ModuleRoute>} />
           <Route path="reportes"      element={<ModuleRoute modulo="reportes"><Reportes /></ModuleRoute>} />
           <Route path="mapa"          element={<MapaVisibilidad />} />
+          <Route path="historial"     element={<HistorialViajes />} />
           <Route path="logs"          element={<ModuleRoute modulo="logs"><LogsActividad /></ModuleRoute>} />
           <Route path="liquidaciones" element={<ModuleRoute modulo="liquidaciones"><Liquidaciones /></ModuleRoute>} />
           <Route path="documentos"    element={<ModuleRoute modulo="documentos"><Documentos /></ModuleRoute>} />

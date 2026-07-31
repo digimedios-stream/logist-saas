@@ -10,6 +10,7 @@ import iconoImg from '@/assets/icono.png'
 const ALL_NAV_ITEMS = [
   { to: '/admin',                icon: 'dashboard',           label: 'Panel Control',   end: true },
   { to: '/admin/mapa',           icon: 'map',                 label: 'Mapa Rutas' },
+  { to: '/admin/historial',      icon: 'history_toggle_off',  label: 'Historial Viajes' },
   { to: '/admin/vehiculos',      icon: 'local_shipping',      label: 'Flota' },
   { to: '/admin/choferes',       icon: 'group',               label: 'Choferes' },
   { to: '/admin/mantenimientos', icon: 'build',               label: 'Mantenimientos' },
