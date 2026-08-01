@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase'
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import { format } from 'date-fns'
+import { filtrarTrayectoriaReal } from '@/lib/geoUtils'
 
 // Iconos personalizados para Leaflet
 const startIcon = new L.Icon({
@@ -105,7 +106,8 @@ export default function HistorialViajes() {
         .order('timestamp', { ascending: true })
 
       if (error) throw error
-      setRutaViaje(data || [])
+      const rutaLimpia = filtrarTrayectoriaReal(data || [])
+      setRutaViaje(rutaLimpia)
     } catch (e) {
       console.error('Error al cargar coordenadas del recorrido:', e)
     } finally {

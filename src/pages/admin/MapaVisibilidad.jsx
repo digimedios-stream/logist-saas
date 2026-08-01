@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import L from 'leaflet'
 import { format } from 'date-fns'
+import { filtrarTrayectoriaReal } from '@/lib/geoUtils'
 
 // Custom marker icon for trucks
 const truckIcon = new L.Icon({
@@ -80,6 +81,10 @@ export default function MapaVisibilidad() {
           ubicacionesData.forEach(ub => {
             if (!ubsPorViaje[ub.viaje_id]) ubsPorViaje[ub.viaje_id] = []
             ubsPorViaje[ub.viaje_id].push(ub)
+          })
+          // Filtrar trayectorias erráticas de antenas/sensores
+          Object.keys(ubsPorViaje).forEach(vid => {
+            ubsPorViaje[vid] = filtrarTrayectoriaReal(ubsPorViaje[vid])
           })
         }
         setUbicaciones(ubsPorViaje)

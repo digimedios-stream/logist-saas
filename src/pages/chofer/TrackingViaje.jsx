@@ -106,7 +106,7 @@ export default function TrackingViaje() {
         return
       }
 
-      // 2. FILTRADO DE MOVIMIENTO: Evitar registrar jitter/rebote estático si se mueve menos de 5 metros
+      // 2. FILTRADO DE MOVIMIENTO Y VELOCIDAD IMPOSIBLE:
       if (ultimaCoordenada.current) {
         const dist = getDistance(
           ultimaCoordenada.current.latitude,
@@ -114,10 +114,22 @@ export default function TrackingViaje() {
           latitude,
           longitude
         )
-        if (dist < 5) return
+        // Ignorar rebote estático menor a 4 metros
+        if (dist < 4) return
+
+        // Validar si la velocidad calculada del salto es físicamente imposible
+        const ahora = Date.now()
+        const dtSeg = (ahora - (ultimaCoordenada.current.timestamp || ahora)) / 1000
+        if (dtSeg > 0) {
+          const velKmh = (dist / dtSeg) * 3.6
+          if (velKmh > 100 && dist > 120) {
+            console.warn(`[GPS Mobile] Salto errático descartado: ${dist.toFixed(0)}m en ${dtSeg.toFixed(1)}s (${velKmh.toFixed(1)} km/h)`)
+            return
+          }
+        }
       }
 
-      ultimaCoordenada.current = { latitude, longitude }
+      ultimaCoordenada.current = { latitude, longitude, timestamp: Date.now() }
       setUbicacionActual({ latitude, longitude, accuracy })
       setErrorGps('') // Limpiar advertencia
 
