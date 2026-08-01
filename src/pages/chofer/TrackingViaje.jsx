@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { registerPlugin } from '@capacitor/core'
 import { Geolocation } from '@capacitor/geolocation'
+import { LocalNotifications } from '@capacitor/local-notifications'
 
 const BackgroundGeolocation = registerPlugin('BackgroundGeolocation')
 
@@ -79,6 +80,16 @@ export default function TrackingViaje() {
           setErrorGps('Permisos de ubicación denegados.')
           return
         }
+      }
+      
+      // Solicitar permiso explícito de notificaciones para Android 13+
+      try {
+        const notifPerms = await LocalNotifications.checkPermissions()
+        if (notifPerms.display !== 'granted') {
+          await LocalNotifications.requestPermissions()
+        }
+      } catch (nErr) {
+        console.warn('Permisos de notificación no disponibles en este entorno:', nErr)
       }
     } catch (e) {
       console.warn('Chequeo de permisos nativos omitido (quizás es web)', e)
