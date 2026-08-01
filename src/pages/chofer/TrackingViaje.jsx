@@ -1,7 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
+import { registerPlugin } from '@capacitor/core'
 import { Geolocation } from '@capacitor/geolocation'
+
+const BackgroundGeolocation = registerPlugin('BackgroundGeolocation')
 
 // Calcular distancia en metros usando Haversine para filtrar micro-movimientos estáticos
 function getDistance(lat1, lon1, lat2, lon2) {
@@ -25,6 +28,7 @@ export default function TrackingViaje() {
   
   const watchId = useRef(null)
   const ultimaCoordenada = useRef(null)
+  const isNativeBackground = useRef(false)
 
   useEffect(() => {
     verificarViajeActivo()
@@ -68,7 +72,6 @@ export default function TrackingViaje() {
 
   const iniciarTracking = async (viajeId) => {
     try {
-      // Solicitar permisos nativos si aplica
       const permissions = await Geolocation.checkPermissions()
       if (permissions.location !== 'granted') {
         const request = await Geolocation.requestPermissions()
@@ -84,17 +87,79 @@ export default function TrackingViaje() {
     setTracking(true)
     setErrorGps('')
 
-    // Calentamiento: pedir una posición inicial primero para despertar el GPS
-    try {
-      await Geolocation.getCurrentPosition({
-        enableHighAccuracy: true,
-        timeout: 15000,
-        maximumAge: 10000
-      })
-    } catch (e) {
-      console.warn('Calentamiento GPS falló, continuando igual:', e)
+    // Función unificada para procesar e insertar puntos de ubicación
+    const procesarCoordenada = async (latitude, longitude, speed, heading, accuracy) => {
+      // 1. FILTRADO DE PRECISIÓN: Ignorar estimaciones inestables de antenas de red (>40m)
+      if (accuracy && accuracy > 40) {
+        console.warn('Coordenada ignorada por baja precisión:', accuracy)
+        return
+      }
+
+      // 2. FILTRADO DE MOVIMIENTO: Evitar registrar jitter/rebote estático si se mueve menos de 5 metros
+      if (ultimaCoordenada.current) {
+        const dist = getDistance(
+          ultimaCoordenada.current.latitude,
+          ultimaCoordenada.current.longitude,
+          latitude,
+          longitude
+        )
+        if (dist < 5) return
+      }
+
+      ultimaCoordenada.current = { latitude, longitude }
+      setUbicacionActual({ latitude, longitude, accuracy })
+      setErrorGps('') // Limpiar advertencia
+
+      // Guardar en Supabase
+      await supabase.from('ubicaciones_viaje').insert([{
+        viaje_id: viajeId,
+        latitud: latitude,
+        longitud: longitude,
+        velocidad: speed || 0,
+        heading: heading || 0,
+        precision_gps: accuracy || 0
+      }])
     }
 
+    // Intentar primero con BackgroundGeolocation nativo (Foreground Service en Android)
+    try {
+      watchId.current = await BackgroundGeolocation.addWatcher(
+        {
+          backgroundMessage: "Logist está registrando el recorrido en segundo plano.",
+          backgroundTitle: "Rastreo de Viaje Activo",
+          requestPermissions: true,
+          stale: false,
+          distanceFilter: 5
+        },
+        async (location, error) => {
+          if (error) {
+            console.warn('Error en BackgroundGeolocation nativo:', error)
+            if (error.code === 'NOT_AUTHORIZED') {
+              setErrorGps('Permisos de ubicación en segundo plano denegados.')
+            } else {
+              setErrorGps('Buscando señal GPS precisa...')
+            }
+            return
+          }
+          if (location) {
+            await procesarCoordenada(
+              location.latitude,
+              location.longitude,
+              location.speed,
+              location.bearing || location.heading,
+              location.accuracy
+            )
+          }
+        }
+      )
+      isNativeBackground.current = true
+      return
+    } catch (bgErr) {
+      console.warn('BackgroundGeolocation no disponible nativamente, usando fallback Geolocation:', bgErr)
+      isNativeBackground.current = false
+    }
+
+    // Fallback para Web
     try {
       watchId.current = await Geolocation.watchPosition(
         {
@@ -110,37 +175,7 @@ export default function TrackingViaje() {
           }
           if (pos) {
             const { latitude, longitude, speed, heading, accuracy } = pos.coords
-
-            // 1. FILTRADO DE PRECISIÓN: Ignorar estimaciones inestables de antenas de red (mayor a 40 metros de margen)
-            if (accuracy > 40) {
-              console.warn('Coordenada ignorada por baja precisión:', accuracy)
-              return
-            }
-
-            // 2. FILTRADO DE MOVIMIENTO: Evitar registrar jitter/rebote estático si se mueve menos de 5 metros
-            if (ultimaCoordenada.current) {
-              const dist = getDistance(
-                ultimaCoordenada.current.latitude,
-                ultimaCoordenada.current.longitude,
-                latitude,
-                longitude
-              )
-              if (dist < 5) return
-            }
-
-            ultimaCoordenada.current = { latitude, longitude }
-            setUbicacionActual({ latitude, longitude, accuracy })
-            setErrorGps('') // Limpiar advertencia
-
-            // Guardar en Supabase
-            await supabase.from('ubicaciones_viaje').insert([{
-              viaje_id: viajeId,
-              latitud: latitude,
-              longitud: longitude,
-              velocidad: speed,
-              heading: heading,
-              precision_gps: accuracy
-            }])
+            await procesarCoordenada(latitude, longitude, speed, heading, accuracy)
           }
         }
       )
@@ -152,7 +187,15 @@ export default function TrackingViaje() {
 
   const detenerTracking = async () => {
     if (watchId.current !== null) {
-      await Geolocation.clearWatch({ id: watchId.current })
+      try {
+        if (isNativeBackground.current) {
+          await BackgroundGeolocation.removeWatcher({ id: watchId.current })
+        } else {
+          await Geolocation.clearWatch({ id: watchId.current })
+        }
+      } catch (e) {
+        console.warn('Error al detener watcher:', e)
+      }
       watchId.current = null
       ultimaCoordenada.current = null
       setTracking(false)
