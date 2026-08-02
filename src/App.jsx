@@ -8,6 +8,7 @@ import ChoferLayout from '@/components/layout/ChoferLayout'
 import SuperAdminLayout from '@/components/layout/SuperAdminLayout'
 
 // Admin Pages
+import Landing from '@/pages/Landing'
 import Login from '@/pages/Login'
 import AdminDashboard from '@/pages/admin/Dashboard'
 import Vehiculos from '@/pages/admin/Vehiculos'
@@ -124,13 +125,21 @@ export default function App() {
     <>
       <PWAInstallPrompt />
       <Routes>
-        {/* Login */}
+        {/* Landing Page Pre-Login */}
+        <Route
+          path="/"
+          element={
+            user && userRole
+              ? <Navigate to={userRole === 'superadmin' ? '/superadmin' : userRole === 'admin' ? '/admin' : '/chofer'} replace />
+              : <Landing />
+          }
+        />
         <Route
           path="/login"
           element={
             user && userRole
               ? <Navigate to={userRole === 'superadmin' ? '/superadmin' : userRole === 'admin' ? '/admin' : '/chofer'} replace />
-              : <Login />
+              : <Landing />
           }
         />
 
