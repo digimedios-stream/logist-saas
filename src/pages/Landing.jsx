@@ -2,11 +2,15 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import logoImg from '@/assets/logo.png'
+import ParticlesBg from '@/components/ui/particles-bg'
+import screenChoferImg from '@/assets/screen_chofer.jpg'
 
 export default function Landing() {
   const [showModal, setShowModal] = useState(false)
   const [activeTab, setActiveTab] = useState('dms') // 'dms' | 'tms'
   const [modalTab, setModalTab] = useState('empresa') // 'empresa' | 'chofer'
+  const [dmsSubTab, setDmsSubTab] = useState('mapa') // 'mapa' | 'lineas'
+  const [tmsSubTab, setTmsSubTab] = useState('vtv') // 'vtv' | 'reportes'
   
   // Form State
   const [email, setEmail] = useState('')
@@ -46,19 +50,16 @@ export default function Landing() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0B0F19] text-[#e5e2e2] font-sans relative overflow-x-hidden selection:bg-lazdin-emerald selection:text-black">
+    <div className="dark min-h-screen bg-[#0B0F19] text-[#e5e2e2] font-sans relative overflow-x-hidden selection:bg-lazdin-emerald selection:text-black">
       
-      {/* Fondo de Malla Animado & Glows Ambientales */}
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        <div className="absolute w-[70vw] h-[70vw] -top-[20%] -left-[10%] rounded-full bg-emerald-500/10 blur-[130px] animate-pulse" />
-        <div className="absolute w-[70vw] h-[70vw] -bottom-[20%] -right-[10%] rounded-full bg-cyan-500/10 blur-[140px] animate-pulse delay-1000" />
-      </div>
+      {/* Dynamic Particles Background */}
+      <ParticlesBg />
 
       {/* HEADER STICKY */}
       <header className="sticky top-0 w-full z-40 bg-[#0B0F19]/80 backdrop-blur-xl border-b border-white/10 shadow-[0_0_20px_rgba(6,182,212,0.08)]">
         <div className="flex justify-between items-center px-6 lg:px-12 py-4 max-w-[1440px] mx-auto">
           <div className="flex items-center gap-3">
-            <img src={logoImg} alt="MOVIX Logo" className="h-9 w-auto object-contain" />
+            <img src={logoImg} alt="MOVIX Logo" className="h-14 w-auto object-contain" />
           </div>
 
           <nav className="hidden md:flex gap-8 items-center text-sm font-medium text-slate-300">
@@ -85,10 +86,10 @@ export default function Landing() {
 
         {/* HERO SECTION */}
         <section className="relative min-h-[85vh] flex flex-col justify-center items-center px-6 lg:px-12 py-12 max-w-[1440px] mx-auto">
-          <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
             
             {/* Texto Hero */}
-            <div className="space-y-6 text-center lg:text-left">
+            <div className="lg:col-span-5 space-y-6 text-center lg:text-left">
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold uppercase tracking-widest">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
                 SaaS Logístico Enterprise
@@ -103,7 +104,7 @@ export default function Landing() {
               </h1>
 
               <p className="text-slate-400 text-base sm:text-lg max-w-xl mx-auto lg:mx-0 font-normal leading-relaxed">
-                Optimiza rutas, rastrea unidades en tiempo real sin interrupciones con <strong className="text-white">Foreground Service nativo</strong> y digitaliza toda tu operación en un solo sistema DMS + TMS.
+                Optimiza rutas, rastrea unidades en tiempo real sin interrupciones con <strong className="text-white">Foreground Service nativo</strong> y digitaliza toda tu operation en un solo sistema DMS + TMS.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 pt-4 justify-center lg:justify-start">
@@ -123,57 +124,24 @@ export default function Landing() {
               </div>
             </div>
 
-            {/* Mockup Showcase 3D */}
-            <div className="relative flex justify-center items-center">
-              {/* Tarjeta Principal Panel Admin */}
-              <div className="w-full aspect-video bg-slate-900/90 rounded-2xl p-4 border border-slate-700/60 shadow-2xl backdrop-blur-xl relative z-10 overflow-hidden transform hover:rotate-1 transition-transform duration-500">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-3">
-                  <div className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-full bg-red-500" />
-                    <span className="w-3 h-3 rounded-full bg-amber-500" />
-                    <span className="w-3 h-3 rounded-full bg-emerald-500" />
-                    <span className="text-xs text-slate-400 font-mono ml-2">movix-control-panel.app</span>
-                  </div>
-                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-bold uppercase tracking-wider">
-                    GPS 24/7 En Vivo
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-3 gap-3 mb-3">
-                  <div className="bg-slate-800/50 p-2.5 rounded-lg border border-slate-700/40">
-                    <p className="text-[10px] text-slate-400 uppercase font-mono">Unidades En Ruta</p>
-                    <p className="text-lg font-black text-emerald-400 font-mono">14 / 16</p>
-                  </div>
-                  <div className="bg-slate-800/50 p-2.5 rounded-lg border border-slate-700/40">
-                    <p className="text-[10px] text-slate-400 uppercase font-mono">Precisión GPS</p>
-                    <p className="text-lg font-black text-cyan-400 font-mono">Alta (Sat-GPS)</p>
-                  </div>
-                  <div className="bg-slate-800/50 p-2.5 rounded-lg border border-slate-700/40">
-                    <p className="text-[10px] text-slate-400 uppercase font-mono">Novedades Hoy</p>
-                    <p className="text-lg font-black text-amber-400 font-mono">2 Recibidas</p>
+            {/* Mockup Showcase 3D (Photos) */}
+            <div className="lg:col-span-7 relative flex justify-center items-center">
+              {/* Tarjeta Principal Panel Admin Photo */}
+              <div className="w-full aspect-video bg-slate-900/90 rounded-2xl p-2 border border-slate-700/60 shadow-2xl backdrop-blur-xl relative z-10 overflow-hidden transform hover:rotate-1 transition-transform duration-500">
+                <img 
+                  src="/Captura Panel de control.png" 
+                  alt="Dashboard Control Flotas" 
+                  className="w-full h-full object-cover rounded-xl"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 to-transparent pointer-events-none rounded-xl" />
+                <div className="absolute bottom-4 left-4 right-4 flex justify-between items-end">
+                  <div>
+                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-bold uppercase tracking-wider backdrop-blur-md">
+                      GPS 24/7 En Vivo
+                    </span>
+                    <p className="text-white font-bold text-sm mt-1">Monitoreo de Flota Activo</p>
                   </div>
                 </div>
-
-                {/* Vista previa simulada de mapa */}
-                <div className="h-44 bg-slate-950 rounded-lg relative overflow-hidden border border-slate-800 flex items-center justify-center">
-                  <div className="absolute inset-0 bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:16px_16px] opacity-40" />
-                  <svg className="absolute inset-0 w-full h-full stroke-emerald-400/80 fill-none" strokeWidth="3">
-                    <path d="M 30 140 Q 120 40 220 100 T 380 60" strokeDasharray="4 2" />
-                  </svg>
-                  <div className="relative z-10 flex items-center gap-2 bg-slate-900/90 px-3 py-1.5 rounded-full border border-emerald-500/50 shadow-lg">
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
-                    <span className="text-xs font-mono text-white">Camión AF987GH — 42 km/h</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Tarjeta Flotante App Chofer */}
-              <div className="absolute -bottom-6 -right-2 sm:right-4 w-56 sm:w-64 bg-slate-900/95 p-4 rounded-2xl border border-cyan-500/40 shadow-2xl z-20 backdrop-blur-xl animate-bounce">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="material-symbols-outlined text-cyan-400 text-lg">notifications_active</span>
-                  <span className="text-xs font-bold text-white font-mono">Android Foreground Service</span>
-                </div>
-                <p className="text-[11px] text-slate-300">Rastreo activo sin cortes con pantalla bloqueada y modo offline habilitado.</p>
               </div>
             </div>
 
@@ -237,58 +205,212 @@ export default function Landing() {
 
           {/* Contenido DMS */}
           {activeTab === 'dms' && (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in">
-              <div className="bg-slate-900/70 border border-slate-800 p-8 rounded-2xl hover:border-cyan-500/40 transition-all space-y-4">
-                <span className="material-symbols-outlined text-cyan-400 text-4xl">route</span>
-                <h3 className="text-xl font-bold text-white">Líneas & Rutas Inteligentes</h3>
-                <p className="text-slate-400 text-sm leading-relaxed">
-                  Definición de paradas, horarios de salida/regreso, kilometraje estimado y tarifas base para cada recorrido.
-                </p>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center animate-in">
+              <div className="lg:col-span-5 space-y-4">
+                <div 
+                  onClick={() => setDmsSubTab('lineas')}
+                  className={`bg-slate-900/70 border p-6 rounded-2xl cursor-pointer transition-all space-y-2 ${
+                    dmsSubTab === 'lineas' ? 'border-cyan-500 bg-slate-900/90 shadow-lg scale-[1.02]' : 'border-slate-800 hover:border-slate-700'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="material-symbols-outlined text-cyan-400 text-3xl">route</span>
+                    <h3 className="text-lg font-bold text-white">Líneas & Rutas Inteligentes</h3>
+                  </div>
+                  <p className="text-slate-400 text-xs leading-relaxed">
+                    Definición de paradas, horarios de salida/regreso, kilometraje estimado y tarifas base para cada recorrido.
+                  </p>
+                </div>
+
+                <div 
+                  onClick={() => setDmsSubTab('mapa')}
+                  className={`bg-slate-900/70 border p-6 rounded-2xl cursor-pointer transition-all space-y-2 ${
+                    dmsSubTab === 'mapa' ? 'border-emerald-500 bg-slate-900/90 shadow-lg scale-[1.02]' : 'border-slate-800 hover:border-slate-700'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="material-symbols-outlined text-emerald-400 text-3xl">map</span>
+                    <h3 className="text-lg font-bold text-white">Mapa de Visibilidad en Vivo</h3>
+                  </div>
+                  <p className="text-slate-400 text-xs leading-relaxed">
+                    Seguimiento satelital en vivo con filtrado de velocidad imposible que elimina saltos erráticos y muestra trazados curvos exactos.
+                  </p>
+                </div>
+
+                <div 
+                  onClick={() => setDmsSubTab('historial')}
+                  className={`bg-slate-900/70 border p-6 rounded-2xl cursor-pointer transition-all space-y-2 ${
+                    dmsSubTab === 'historial' ? 'border-cyan-500 bg-slate-900/90 shadow-lg scale-[1.02]' : 'border-slate-800 hover:border-slate-700'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="material-symbols-outlined text-cyan-400 text-3xl">history_toggle_off</span>
+                    <h3 className="text-lg font-bold text-white">Historial Auditable</h3>
+                  </div>
+                  <p className="text-slate-400 text-xs leading-relaxed">
+                    Auditoría completa de viajes finalizados con reproducibilidad de trayectos, timestamps exactos y eliminación de registros obsoletos.
+                  </p>
+                </div>
               </div>
 
-              <div className="bg-slate-900/70 border border-slate-800 p-8 rounded-2xl hover:border-emerald-500/40 transition-all space-y-4">
-                <span className="material-symbols-outlined text-emerald-400 text-4xl">map</span>
-                <h3 className="text-xl font-bold text-white">Mapa de Visibilidad en Vivo</h3>
-                <p className="text-slate-400 text-sm leading-relaxed">
-                  Seguimiento satelital en vivo con filtrado de velocidad imposible que elimina saltos erráticos y muestra trazados curvos exactos.
-                </p>
-              </div>
-
-              <div className="bg-slate-900/70 border border-slate-800 p-8 rounded-2xl hover:border-cyan-500/40 transition-all space-y-4">
-                <span className="material-symbols-outlined text-cyan-400 text-4xl">history_toggle_off</span>
-                <h3 className="text-xl font-bold text-white">Historial Auditable</h3>
-                <p className="text-slate-400 text-sm leading-relaxed">
-                  Auditoría completa de viajes finalizados con reproducibilidad de trayectos, timestamps exactos y eliminación de registros obsoletos.
-                </p>
+              {/* Columna derecha con mockup de la captura */}
+              <div className="lg:col-span-7 bg-slate-900/80 border border-slate-800 p-3 rounded-2xl shadow-2xl relative overflow-hidden backdrop-blur-xl">
+                <div className="absolute inset-0 bg-gradient-to-tr from-cyan-500/10 to-emerald-500/10 blur-[60px] pointer-events-none" />
+                <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-3 px-2">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                    <span className="text-[10px] text-slate-400 font-mono ml-2">
+                      {dmsSubTab === 'mapa' ? 'movix-mapa-visibilidad.app' : dmsSubTab === 'lineas' ? 'movix-lineas-rutas.app' : 'movix-historial-viajes.app'}
+                    </span>
+                  </div>
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => setDmsSubTab('mapa')}
+                      className={`px-2.5 py-1 rounded text-[10px] font-bold uppercase transition-all ${
+                        dmsSubTab === 'mapa' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Mapa
+                    </button>
+                    <button 
+                      onClick={() => setDmsSubTab('lineas')}
+                      className={`px-2.5 py-1 rounded text-[10px] font-bold uppercase transition-all ${
+                        dmsSubTab === 'lineas' ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Rutas
+                    </button>
+                    <button 
+                      onClick={() => setDmsSubTab('historial')}
+                      className={`px-2.5 py-1 rounded text-[10px] font-bold uppercase transition-all ${
+                        dmsSubTab === 'historial' ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Historial
+                    </button>
+                  </div>
+                </div>
+                <div className="relative aspect-[16/10] w-full rounded-xl overflow-hidden border border-slate-800 bg-slate-950">
+                  <img 
+                    src={
+                      dmsSubTab === 'mapa' 
+                        ? '/Captura de pantalla Mapa Ruta.png' 
+                        : dmsSubTab === 'lineas'
+                        ? '/Captura de pantalla Lineas Rutas.png'
+                        : '/Captura de pantalla Historial de Viajes.png'
+                    } 
+                    alt="Vista del Sistema" 
+                    className="w-full h-full object-cover object-top"
+                  />
+                </div>
               </div>
             </div>
           )}
 
           {/* Contenido TMS */}
           {activeTab === 'tms' && (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in" id="tms">
-              <div className="bg-slate-900/70 border border-slate-800 p-8 rounded-2xl hover:border-emerald-500/40 transition-all space-y-4">
-                <span className="material-symbols-outlined text-emerald-400 text-4xl">local_shipping</span>
-                <h3 className="text-xl font-bold text-white">Expediente Vehicular & Flota</h3>
-                <p className="text-slate-400 text-sm leading-relaxed">
-                  Control integral de la flota: VTV/RTO, Pólizas de Seguro, Cédulas y Mantenimientos preventivos/correctivos con alertas de vencimiento.
-                </p>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center animate-in" id="tms">
+              <div className="lg:col-span-5 space-y-4">
+                <div 
+                  onClick={() => setTmsSubTab('vtv')}
+                  className={`bg-slate-900/70 border p-6 rounded-2xl cursor-pointer transition-all space-y-2 ${
+                    tmsSubTab === 'vtv' ? 'border-emerald-500 bg-slate-900/90 shadow-lg scale-[1.02]' : 'border-slate-800 hover:border-slate-700'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="material-symbols-outlined text-emerald-400 text-3xl">local_shipping</span>
+                    <h3 className="text-lg font-bold text-white">Expediente Vehicular & Flota</h3>
+                  </div>
+                  <p className="text-slate-400 text-xs leading-relaxed">
+                    Control integral de la flota: VTV/RTO, Pólizas de Seguro, Cédulas y Mantenimientos preventivos/correctivos con alertas de vencimiento.
+                  </p>
+                </div>
+
+                <div 
+                  onClick={() => setTmsSubTab('combustible')}
+                  className={`bg-slate-900/70 border p-6 rounded-2xl cursor-pointer transition-all space-y-2 ${
+                    tmsSubTab === 'combustible' ? 'border-cyan-500 bg-slate-900/90 shadow-lg scale-[1.02]' : 'border-slate-800 hover:border-slate-700'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="material-symbols-outlined text-cyan-400 text-3xl">local_gas_station</span>
+                    <h3 className="text-lg font-bold text-white">Control de Combustible</h3>
+                  </div>
+                  <p className="text-slate-400 text-xs leading-relaxed">
+                    Registro detallado de cargas de combustible, comprobantes adjuntos, costo por litro y auditoría de rendimiento por vehículo.
+                  </p>
+                </div>
+
+                <div 
+                  onClick={() => setTmsSubTab('reportes')}
+                  className={`bg-slate-900/70 border p-6 rounded-2xl cursor-pointer transition-all space-y-2 ${
+                    tmsSubTab === 'reportes' ? 'border-cyan-500 bg-slate-900/90 shadow-lg scale-[1.02]' : 'border-slate-800 hover:border-slate-700'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="material-symbols-outlined text-emerald-400 text-3xl">gavel</span>
+                    <h3 className="text-lg font-bold text-white">Multas, Documentos & Liquidaciones</h3>
+                  </div>
+                  <p className="text-slate-400 text-xs leading-relaxed">
+                    Administración de actas de infracción, reportes de actividad, repositorio documental corporativo y cálculo de liquidaciones operativas.
+                  </p>
+                </div>
               </div>
 
-              <div className="bg-slate-900/70 border border-slate-800 p-8 rounded-2xl hover:border-cyan-500/40 transition-all space-y-4">
-                <span className="material-symbols-outlined text-cyan-400 text-4xl">local_gas_station</span>
-                <h3 className="text-xl font-bold text-white">Control de Combustible</h3>
-                <p className="text-slate-400 text-sm leading-relaxed">
-                  Registro detallado de cargas de combustible, comprobantes adjuntos, costo por litro y auditoría de rendimiento por vehículo.
-                </p>
-              </div>
-
-              <div className="bg-slate-900/70 border border-slate-800 p-8 rounded-2xl hover:border-emerald-500/40 transition-all space-y-4">
-                <span className="material-symbols-outlined text-emerald-400 text-4xl">gavel</span>
-                <h3 className="text-xl font-bold text-white">Multas, Documentos & Liquidaciones</h3>
-                <p className="text-slate-400 text-sm leading-relaxed">
-                  Administración de actas de infracción, repositorio documental corporativo y cálculo de liquidaciones operativas.
-                </p>
+              {/* Columna derecha con mockup de la captura */}
+              <div className="lg:col-span-7 bg-slate-900/80 border border-slate-800 p-3 rounded-2xl shadow-2xl relative overflow-hidden backdrop-blur-xl">
+                <div className="absolute inset-0 bg-gradient-to-tr from-cyan-500/10 to-emerald-500/10 blur-[60px] pointer-events-none" />
+                <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-3 px-2">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                    <span className="text-[10px] text-slate-400 font-mono ml-2">
+                      {tmsSubTab === 'vtv' ? 'movix-flota-documentacion.app' : tmsSubTab === 'combustible' ? 'movix-combustible.app' : 'movix-reportes-analiticas.app'}
+                    </span>
+                  </div>
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => setTmsSubTab('vtv')}
+                      className={`px-2.5 py-1 rounded text-[10px] font-bold uppercase transition-all ${
+                        tmsSubTab === 'vtv' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      VTV
+                    </button>
+                    <button 
+                      onClick={() => setTmsSubTab('combustible')}
+                      className={`px-2.5 py-1 rounded text-[10px] font-bold uppercase transition-all ${
+                        tmsSubTab === 'combustible' ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Nafta
+                    </button>
+                    <button 
+                      onClick={() => setTmsSubTab('reportes')}
+                      className={`px-2.5 py-1 rounded text-[10px] font-bold uppercase transition-all ${
+                        tmsSubTab === 'reportes' ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Reportes
+                    </button>
+                  </div>
+                </div>
+                <div className="relative aspect-[16/10] w-full rounded-xl overflow-hidden border border-slate-800 bg-slate-950">
+                  <img 
+                    src={
+                      tmsSubTab === 'vtv' 
+                        ? '/Captura pantalla VTV RTO.png' 
+                        : tmsSubTab === 'combustible'
+                        ? '/Captura de pantalla Contol de Combustible.png'
+                        : '/Captura de pantalla Reportes.png'
+                    } 
+                    alt="Vista del Sistema" 
+                    className="w-full h-full object-cover object-top"
+                  />
+                </div>
               </div>
             </div>
           )}
@@ -336,39 +458,18 @@ export default function Landing() {
               </div>
             </div>
 
-            {/* Card Visual de Notificación */}
-            <div className="bg-slate-900/90 border border-slate-800 p-8 rounded-3xl shadow-2xl relative">
-              <div className="flex items-center gap-4 border-b border-slate-800 pb-4 mb-6">
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-cyan-500 to-emerald-500 flex items-center justify-center text-slate-950 font-black text-xl">
-                  M
-                </div>
-                <div>
-                  <h4 className="text-white font-bold text-base">MOVIX Driver App</h4>
-                  <p className="text-xs text-slate-400 font-mono">Android Release APK v1.0.0</p>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <span className="material-symbols-outlined text-emerald-400">near_me</span>
-                    <div>
-                      <p className="text-xs font-bold text-white">Servicio de GPS Activo</p>
-                      <p className="text-[10px] text-slate-400 font-mono">Notificación fija en barra superior</p>
-                    </div>
-                  </div>
-                  <span className="px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 text-[10px] font-mono font-bold uppercase">En Ruta</span>
-                </div>
-
-                <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <span className="material-symbols-outlined text-amber-400">warning</span>
-                    <div>
-                      <p className="text-xs font-bold text-white">Novedad Registrada</p>
-                      <p className="text-[10px] text-slate-400">Foto + Motivo adjunto</p>
-                    </div>
-                  </div>
-                  <span className="px-2 py-1 rounded bg-amber-500/20 text-amber-400 text-[10px] font-mono font-bold uppercase">Sincronizado</span>
+            {/* Mockup Celular App Chofer */}
+            <div className="relative flex justify-center items-center">
+              <div className="absolute inset-0 bg-gradient-to-tr from-cyan-500/10 to-emerald-500/10 blur-[80px] rounded-full pointer-events-none" />
+              <div className="relative w-[280px] sm:w-[300px] aspect-[9/19.5] bg-slate-950/95 p-3 rounded-[3rem] border border-slate-700/80 shadow-2xl backdrop-blur-xl overflow-hidden">
+                {/* Notch/Dynamic Island */}
+                <div className="absolute top-4 left-1/2 -translate-x-1/2 w-24 h-4 bg-slate-950 rounded-full z-30 border border-slate-800" />
+                <div className="w-full h-full rounded-[2.5rem] overflow-hidden relative z-20 border border-slate-800 bg-slate-950">
+                  <img 
+                    src={screenChoferImg} 
+                    alt="MOVIX Driver App Interface" 
+                    className="w-full h-full object-cover"
+                  />
                 </div>
               </div>
             </div>
