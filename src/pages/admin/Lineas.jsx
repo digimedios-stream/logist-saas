@@ -263,7 +263,8 @@ export default function LineasPage() {
     e.preventDefault()
     setSaving(true)
     try {
-      const { id, created_at, updated_at, ...rawForm } = form
+      // Omitir campos sintéticos creados dinámicamente en el cliente que no existen en la tabla Supabase
+      const { id, created_at, updated_at, personal, turnoActivo, ultimoTurno, ...rawForm } = form
       
       // Limpiar y asegurar tipos de datos numéricos
       const dataToSave = {
