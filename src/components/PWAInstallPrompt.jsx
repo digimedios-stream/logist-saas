@@ -86,7 +86,7 @@ export default function PWAInstallPrompt() {
         <div className="flex-1 pt-1">
           <h4 className="font-bold text-white text-sm tracking-tight">Instalar App</h4>
           <p className="text-[11px] text-slate-400 mt-1 leading-snug">
-            Instalá Logística Lazdin en tu dispositivo para un acceso más rápido, como una app nativa.
+            Instalá Movix en tu dispositivo para un acceso más rápido, como una app nativa.
           </p>
         </div>
         <button onClick={handleDismiss} className="text-slate-500 hover:text-white p-1 transition-colors bg-slate-800/50 rounded-full">
