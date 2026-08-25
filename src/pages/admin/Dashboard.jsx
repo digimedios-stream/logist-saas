@@ -35,22 +35,23 @@ export default function AdminDashboard() {
       const hoy = new Date()
       const en60Dias = new Date(hoy.getTime() + 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
 
-      // Todas las consultas en paralelo — simples y sin FK joins
-      const [
-        resVehiculos, resChoferes, resTurnos,
-        resAdicionales, resMultas, resNovedades,
-        resSeguros, resVtv, resMants
-      ] = await Promise.all([
+      const results = await Promise.all([
         supabase.from('vehiculos').select('id, tipo_propietario, activo').eq('activo', true),
         supabase.from('choferes').select('id').eq('activo', true),
         supabase.from('turnos').select('id, activo').eq('activo', true),
         supabase.from('adicionales').select('id, estado').eq('estado', 'pendiente'),
         supabase.from('multas').select('id, estado').eq('estado', 'pendiente'),
-        supabase.from('novedades').select('id, leida').eq('leida', false),
+        supabase.from('novedades').select('id, estado').eq('estado', 'abierta'),
         supabase.from('seguros').select('id, vehiculo_id, compania, fecha_vencimiento, vencimiento').lte('fecha_vencimiento', en60Dias).order('fecha_vencimiento'),
         supabase.from('vtv_rto').select('id, vehiculo_id, fecha_vencimiento').lte('fecha_vencimiento', en60Dias).order('fecha_vencimiento'),
         supabase.from('mantenimientos').select('id, descripcion, proximo_km, estado, fecha, vehiculo_id').eq('estado', 'programado')
       ])
+
+      const [
+        resVehiculos, resChoferes, resTurnos,
+        resAdicionales, resMultas, resNovedades,
+        resSeguros, resVtv, resMants
+      ] = results
 
       // Construir stats
       const vehiculos = resVehiculos.data || []

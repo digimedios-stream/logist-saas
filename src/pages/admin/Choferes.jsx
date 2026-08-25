@@ -14,9 +14,10 @@ export default function Choferes() {
     try {
       setLoading(true)
       const data = await choferesService.getChoferes()
-      
       setChoferes(data || [])
-    } catch (err) { console.error(err) }
+    } catch (err) { 
+      console.error(err)
+    }
     finally { setLoading(false) }
   }
 

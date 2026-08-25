@@ -99,6 +99,12 @@ export default function ChoferForm() {
     setSaving(true)
     setError(null)
     
+    if (!empresaData?.id) {
+      setError('Error de sesión: No se pudo identificar tu empresa asignada. Verifica tu cuenta o contacta a soporte.')
+      setSaving(false)
+      return
+    }
+
     try {
       const dataToSave = { 
         ...form,
