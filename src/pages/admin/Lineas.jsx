@@ -21,17 +21,27 @@ export default function LineasPage() {
   // Despacho de viajes
   const [viajes, setViajes] = useState([])
   const [choferes, setChoferes] = useState([])
+  const [clientes, setClientes] = useState([])
+  const [vehiculosEnRegreso, setVehiculosEnRegreso] = useState([])
   const [loadingViajes, setLoadingViajes] = useState(false)
   const [savingViaje, setSavingViaje] = useState(false)
-  const initialViaje = { chofer_id: '', vehiculo_id: '', origen: '', destino: '', cliente: '', notas: '', tarifa: '', tipo: 'especial' }
+  const initialViaje = { chofer_id: '', vehiculo_id: '', origen: '', destino: '', cliente: '', cliente_id: '', notas: '', tarifa: '', tipo: 'especial' }
   const [formViaje, setFormViaje] = useState(initialViaje)
 
   useEffect(() => { 
     cargarLineas() 
     cargarVehiculos()
     cargarChoferes()
+    cargarClientes()
     cargarViajes()
   }, [])
+
+  async function cargarClientes() {
+    try {
+      const { data } = await supabase.from('clientes').select('id, nombre_empresa, nombre_responsable').eq('activo', true).order('nombre_empresa')
+      setClientes(data || [])
+    } catch(err) { console.error(err) }
+  }
 
   async function cargarChoferes() {
     const { data } = await supabase.from('choferes').select('id, nombre').eq('activo', true).order('nombre')
@@ -42,17 +52,25 @@ export default function LineasPage() {
     setLoadingViajes(true)
     try {
       const [resViajes, resChof, resVeh] = await Promise.all([
-        supabase.from('viajes').select('*').neq('estado', 'finalizado').order('created_at', { ascending: false }),
+        supabase.from('viajes').select('*, cliente_rel:cliente_id(nombre_empresa)').neq('estado', 'finalizado').order('created_at', { ascending: false }),
         supabase.from('choferes').select('id, nombre'),
         supabase.from('vehiculos').select('id, patente, marca, modelo').eq('activo', true)
       ])
       const choferesMap = Object.fromEntries((resChof.data || []).map(c => [c.id, c]))
       const vehiculosMap = Object.fromEntries((resVeh.data || []).map(v => [v.id, v]))
-      setViajes((resViajes.data || []).map(v => ({
+      
+      const viajesMapeados = (resViajes.data || []).map(v => ({
         ...v,
         chofer: choferesMap[v.chofer_id] || null,
         vehiculo: vehiculosMap[v.vehiculo_id] || null
-      })))
+      }))
+      setViajes(viajesMapeados)
+
+      // Identificar vehículos en regreso a planta / disponibles para reasignación
+      const enRegreso = viajesMapeados.filter(v => 
+        (v.estado === 'regreso_planta' || v.disponible_reasignacion) && v.vehiculo_id && v.chofer_id
+      )
+      setVehiculosEnRegreso(enRegreso)
     } catch(err) { console.error(err) }
     finally { setLoadingViajes(false) }
   }
@@ -64,6 +82,7 @@ export default function LineasPage() {
     try {
       const payload = {
         ...formViaje,
+        cliente_id: formViaje.cliente_id || null,
         tarifa: formViaje.tarifa ? parseFloat(formViaje.tarifa) : 0,
         empresa_id: empresaData?.id,
         estado: 'pendiente',
@@ -598,8 +617,45 @@ export default function LineasPage() {
             <form onSubmit={despacharViaje} className="bg-lazdin-surface border border-slate-800 rounded-xl p-6 shadow-xl space-y-4">
               <h3 className="text-lg font-bold flex items-center gap-2">
                 <span className="material-symbols-outlined text-lazdin-emerald">add_circle</span>
-                Nuevo Viaje Especial
+                Nuevo Despacho de Viaje
               </h3>
+
+              {/* Banner Sugerencia Inteligente (Camiones en regreso a planta) */}
+              {vehiculosEnRegreso.length > 0 && (
+                <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-3 space-y-2">
+                  <div className="flex items-center gap-2 text-blue-400 font-bold text-xs">
+                    <span className="material-symbols-outlined text-base">near_me</span>
+                    Sugerencia: Vehículos disponibles en regreso ({vehiculosEnRegreso.length})
+                  </div>
+                  <div className="space-y-1.5">
+                    {vehiculosEnRegreso.map(v => (
+                      <button
+                        key={v.id}
+                        type="button"
+                        onClick={() => {
+                          setFormViaje(prev => ({
+                            ...prev,
+                            chofer_id: v.chofer_id,
+                            vehiculo_id: v.vehiculo_id,
+                            origen: v.destino || prev.origen
+                          }))
+                        }}
+                        className="w-full text-left bg-slate-900/80 hover:bg-blue-900/30 p-2 rounded-lg text-xs text-slate-200 border border-slate-800 hover:border-blue-500/40 transition-colors flex items-center justify-between"
+                      >
+                        <div>
+                          <span className="font-bold text-white">{v.vehiculo?.patente}</span>
+                          <span className="text-slate-400 ml-1">({v.chofer?.nombre})</span>
+                          <p className="text-[10px] text-blue-300">Regresando de: {v.destino || 'Destino anterior'}</p>
+                        </div>
+                        <span className="text-[10px] bg-blue-500/20 text-blue-400 font-bold px-2 py-0.5 rounded">
+                          Usar este camión
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div>
                 <label className="text-xs font-bold text-slate-400 uppercase">Chofer *</label>
                 <select required value={formViaje.chofer_id} onChange={e => setFormViaje({...formViaje, chofer_id: e.target.value})} className="form-field mt-1">
@@ -607,6 +663,7 @@ export default function LineasPage() {
                   {choferes.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
                 </select>
               </div>
+
               <div>
                 <label className="text-xs font-bold text-slate-400 uppercase">Vehículo *</label>
                 <select required value={formViaje.vehiculo_id} onChange={e => setFormViaje({...formViaje, vehiculo_id: e.target.value})} className="form-field mt-1">
@@ -614,18 +671,44 @@ export default function LineasPage() {
                   {todosVehiculos.map(v => <option key={v.id} value={v.id}>{v.patente} — {v.marca} {v.modelo}</option>)}
                 </select>
               </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-400 uppercase">Cliente Registrado</label>
+                <select 
+                  value={formViaje.cliente_id} 
+                  onChange={e => {
+                    const cId = e.target.value
+                    const cli = clientes.find(c => c.id === cId)
+                    setFormViaje(prev => ({
+                      ...prev, 
+                      cliente_id: cId,
+                      cliente: cli?.nombre_empresa || prev.cliente
+                    }))
+                  }} 
+                  className="form-field mt-1"
+                >
+                  <option value="">Vincular cliente registrado (opcional)...</option>
+                  {clientes.map(c => (
+                    <option key={c.id} value={c.id}>{c.nombre_empresa} ({c.nombre_responsable})</option>
+                  ))}
+                </select>
+              </div>
+
               <div>
                 <label className="text-xs font-bold text-slate-400 uppercase">Origen *</label>
                 <input required value={formViaje.origen} onChange={e => setFormViaje({...formViaje, origen: e.target.value})} className="form-field mt-1" placeholder="Ej: Planta Buenos Aires" />
               </div>
+
               <div>
                 <label className="text-xs font-bold text-slate-400 uppercase">Destino *</label>
                 <input required value={formViaje.destino} onChange={e => setFormViaje({...formViaje, destino: e.target.value})} className="form-field mt-1" placeholder="Ej: Puerto Zárate" />
               </div>
+
               <div>
-                <label className="text-xs font-bold text-slate-400 uppercase">Cliente / Referencia</label>
-                <input value={formViaje.cliente} onChange={e => setFormViaje({...formViaje, cliente: e.target.value})} className="form-field mt-1" placeholder="Ej: Empresa XYZ" />
+                <label className="text-xs font-bold text-slate-400 uppercase">Referencia / Nombre de Carga</label>
+                <input value={formViaje.cliente} onChange={e => setFormViaje({...formViaje, cliente: e.target.value})} className="form-field mt-1" placeholder="Ej: Carga Paletizada / Empresa XYZ" />
               </div>
+
               <div>
                 <label className="text-xs font-bold text-slate-400 uppercase flex items-center justify-between">
                   Asignación Extra ($)

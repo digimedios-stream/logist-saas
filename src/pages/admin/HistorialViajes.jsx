@@ -43,14 +43,20 @@ export default function HistorialViajes() {
   // Filtros
   const [choferes, setChoferes] = useState([])
   const [vehiculos, setVehiculos] = useState([])
+  const [clientes, setClientes] = useState([])
   const [filtroChofer, setFiltroChofer] = useState('')
   const [filtroVehiculo, setFiltroVehiculo] = useState('')
+  const [filtroCliente, setFiltroCliente] = useState('')
   const [filtroFecha, setFiltroFecha] = useState('')
 
   // Modal de Mapa
   const [viajeSeleccionado, setViajeSeleccionado] = useState(null)
   const [rutaViaje, setRutaViaje] = useState([])
   const [loadingRuta, setLoadingRuta] = useState(false)
+
+  // Modal de Entrega / Comprobante
+  const [entregaSeleccionada, setEntregaSeleccionada] = useState(null)
+  const [fotoModal, setFotoModal] = useState(null)
 
   useEffect(() => {
     cargarFiltros()
@@ -59,12 +65,14 @@ export default function HistorialViajes() {
 
   async function cargarFiltros() {
     try {
-      const [chRes, vehRes] = await Promise.all([
+      const [chRes, vehRes, cliRes] = await Promise.all([
         supabase.from('choferes').select('id, nombre').order('nombre'),
-        supabase.from('vehiculos').select('id, patente').order('patente')
+        supabase.from('vehiculos').select('id, patente').order('patente'),
+        supabase.from('clientes').select('id, nombre_empresa').order('nombre_empresa')
       ])
       if (chRes.data) setChoferes(chRes.data)
       if (vehRes.data) setVehiculos(vehRes.data)
+      if (cliRes.data) setClientes(cliRes.data)
     } catch (e) {
       console.error('Error al cargar filtros:', e)
     }
@@ -78,7 +86,9 @@ export default function HistorialViajes() {
         .select(`
           *,
           chofer:chofer_id(nombre),
-          vehiculo:vehiculo_id(patente)
+          vehiculo:vehiculo_id(patente),
+          cliente_rel:cliente_id(id, nombre_empresa),
+          entregas(*)
         `)
         .eq('estado', 'finalizado')
         .order('created_at', { ascending: false })
@@ -127,8 +137,6 @@ export default function HistorialViajes() {
         .eq('id', id)
       
       if (error) throw error
-      
-      // Actualizar lista localmente
       setViajes(prev => prev.filter(v => v.id !== id))
     } catch (err) {
       alert('Error al eliminar el viaje: ' + err.message)
@@ -141,6 +149,7 @@ export default function HistorialViajes() {
   const viajesFiltrados = viajes.filter(v => {
     if (filtroChofer && v.chofer_id !== filtroChofer) return false
     if (filtroVehiculo && v.vehiculo_id !== filtroVehiculo) return false
+    if (filtroCliente && v.cliente_id !== filtroCliente && v.cliente_rel?.id !== filtroCliente) return false
     if (filtroFecha) {
       const fechaViaje = format(new Date(v.created_at), 'yyyy-MM-dd')
       if (fechaViaje !== filtroFecha) return false
@@ -155,20 +164,20 @@ export default function HistorialViajes() {
     backgroundColor: '#0f172a',
     borderRadius: '0.5rem'
   }
-  const TILE_URL = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+  const TILE_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
 
   return (
     <div className="space-y-6 animate-in">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-white">Historial de Viajes</h2>
-          <p className="text-slate-400 text-sm">Audite los recorridos y trayectorias GPS de viajes finalizados.</p>
+          <h2 className="text-2xl font-bold tracking-tight text-white">Historial de Viajes & Despachos</h2>
+          <p className="text-slate-400 text-sm">Audite los recorridos satelitales, trayectorias GPS y entregas con firma.</p>
         </div>
       </div>
 
       {/* Filtros */}
       <div className="bg-lazdin-surface-low border border-slate-800 p-4 rounded-xl flex flex-wrap items-center gap-4">
-        <div className="w-full sm:w-auto flex-1 min-w-[200px]">
+        <div className="w-full sm:w-auto flex-1 min-w-[180px]">
           <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5">Chofer</label>
           <select 
             className="form-field" 
@@ -180,7 +189,7 @@ export default function HistorialViajes() {
           </select>
         </div>
 
-        <div className="w-full sm:w-auto flex-1 min-w-[200px]">
+        <div className="w-full sm:w-auto flex-1 min-w-[180px]">
           <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5">Vehículo</label>
           <select 
             className="form-field" 
@@ -192,8 +201,20 @@ export default function HistorialViajes() {
           </select>
         </div>
 
-        <div className="w-full sm:w-auto flex-1 min-w-[200px]">
-          <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5">Fecha de Inicio</label>
+        <div className="w-full sm:w-auto flex-1 min-w-[180px]">
+          <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5">Cliente</label>
+          <select 
+            className="form-field" 
+            value={filtroCliente} 
+            onChange={e => setFiltroCliente(e.target.value)}
+          >
+            <option value="">Todos los clientes</option>
+            {clientes.map(c => <option key={c.id} value={c.id}>{c.nombre_empresa}</option>)}
+          </select>
+        </div>
+
+        <div className="w-full sm:w-auto flex-1 min-w-[160px]">
+          <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5">Fecha</label>
           <input 
             type="date" 
             className="form-field" 
@@ -215,59 +236,80 @@ export default function HistorialViajes() {
                 <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Origen</th>
                 <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Destino</th>
                 <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Cliente</th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-right">Recorrido</th>
+                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-center">Entrega</th>
+                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-right">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
               {loading ? (
                 Array.from({ length: 3 }).map((_, i) => (
-                  <tr key={i}><td colSpan="7" className="px-6 py-4"><div className="h-10 bg-lazdin-surface-high rounded animate-pulse" /></td></tr>
+                  <tr key={i}><td colSpan="8" className="px-6 py-4"><div className="h-10 bg-lazdin-surface-high rounded animate-pulse" /></td></tr>
                 ))
               ) : viajesFiltrados.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="px-6 py-8 text-center text-slate-500">
+                  <td colSpan="8" className="px-6 py-8 text-center text-slate-500">
                     No se encontraron viajes finalizados con los filtros aplicados.
                   </td>
                 </tr>
               ) : (
-                viajesFiltrados.map(v => (
-                  <tr key={v.id} className="table-row-hover">
-                    <td className="px-6 py-4 text-sm text-slate-200">
-                      {format(new Date(v.created_at), 'dd/MM/yyyy HH:mm')}
-                    </td>
-                    <td className="px-6 py-4 text-sm font-bold text-white">
-                      {v.chofer?.nombre || 'Desconocido'}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-slate-300">
-                      {v.vehiculo?.patente || 'S/V'}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-slate-300">
-                      {v.origen}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-slate-300">
-                      {v.destino}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-slate-300">
-                      {v.cliente}
-                    </td>
-                    <td className="px-6 py-4 text-right space-x-2 whitespace-nowrap">
-                      <button 
-                        onClick={() => verRecorrido(v)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-lazdin-emerald/10 text-lazdin-emerald hover:bg-lazdin-emerald/20 transition-all rounded-lg text-xs font-bold align-middle"
-                      >
-                        <span className="material-symbols-outlined text-sm">map</span>
-                        Ver Mapa
-                      </button>
-                      <button 
-                        onClick={() => eliminarViaje(v.id)}
-                        className="inline-flex items-center justify-center w-8 h-8 bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-all rounded-lg align-middle"
-                        title="Eliminar Viaje"
-                      >
-                        <span className="material-symbols-outlined text-sm">delete</span>
-                      </button>
-                    </td>
-                  </tr>
-                ))
+                viajesFiltrados.map(v => {
+                  const ent = v.entregas?.[0]
+                  const tieneEntrega = Boolean(ent?.completada)
+
+                  return (
+                    <tr key={v.id} className="table-row-hover">
+                      <td className="px-6 py-4 text-sm text-slate-200">
+                        {format(new Date(v.created_at), 'dd/MM/yyyy HH:mm')}
+                      </td>
+                      <td className="px-6 py-4 text-sm font-bold text-white">
+                        {v.chofer?.nombre || 'Desconocido'}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-300">
+                        {v.vehiculo?.patente || 'S/V'}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-300">
+                        {v.origen}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-300">
+                        {v.destino}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-white font-medium">
+                        {v.cliente_rel?.nombre_empresa || v.cliente || '—'}
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        {tieneEntrega ? (
+                          <button
+                            onClick={() => setEntregaSeleccionada(v)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-500/20 text-emerald-400 rounded-full text-[10px] font-bold uppercase tracking-wider hover:bg-emerald-500/30 transition-colors"
+                          >
+                            <span className="material-symbols-outlined text-xs">verified</span>
+                            Firma OK
+                          </button>
+                        ) : (
+                          <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+                            Sin remito
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-right space-x-2 whitespace-nowrap">
+                        <button 
+                          onClick={() => verRecorrido(v)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-lazdin-emerald/10 text-lazdin-emerald hover:bg-lazdin-emerald/20 transition-all rounded-lg text-xs font-bold align-middle"
+                        >
+                          <span className="material-symbols-outlined text-sm">map</span>
+                          Ver Mapa
+                        </button>
+                        <button 
+                          onClick={() => eliminarViaje(v.id)}
+                          className="inline-flex items-center justify-center w-8 h-8 bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-all rounded-lg align-middle"
+                          title="Eliminar Viaje"
+                        >
+                          <span className="material-symbols-outlined text-sm">delete</span>
+                        </button>
+                      </td>
+                    </tr>
+                  )
+                })
               )}
             </tbody>
           </table>
@@ -278,14 +320,13 @@ export default function HistorialViajes() {
       {viajeSeleccionado && (
         <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-[999] flex items-center justify-center p-4 animate-in fade-in duration-300">
           <div className="bg-lazdin-surface border border-slate-800 w-full max-w-4xl rounded-2xl overflow-hidden shadow-2xl flex flex-col h-[85vh]">
-            {/* Modal Header */}
             <div className="flex items-center justify-between px-6 py-4 bg-lazdin-surface-high border-b border-slate-800">
               <div>
                 <h3 className="font-bold text-lg text-white">
                   Trayecto: {viajeSeleccionado.origen} → {viajeSeleccionado.destino}
                 </h3>
                 <p className="text-xs text-slate-400">
-                  Chofer: {viajeSeleccionado.chofer?.nombre} | Vehículo: {viajeSeleccionado.vehiculo?.patente}
+                  Chofer: {viajeSeleccionado.chofer?.nombre} | Vehículo: {viajeSeleccionado.vehiculo?.patente} | Cliente: {viajeSeleccionado.cliente_rel?.nombre_empresa || viajeSeleccionado.cliente || '—'}
                 </p>
               </div>
               <button 
@@ -296,7 +337,6 @@ export default function HistorialViajes() {
               </button>
             </div>
 
-            {/* Modal Content / Map */}
             <div className="flex-1 p-6 relative">
               {loadingRuta ? (
                 <div className="absolute inset-0 flex items-center justify-center bg-lazdin-surface/80">
@@ -321,17 +361,15 @@ export default function HistorialViajes() {
                   >
                     <TileLayer
                       url={TILE_URL}
-                      attribution='&copy; <a href="https://carto.com/">CARTO</a>'
-                      className="brightness-[1.7] contrast-[1.1] hue-rotate-[10deg]"
+                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                      className="leaflet-layer-dark"
                     />
 
-                    {/* Polyline del Recorrido */}
                     <Polyline 
                       positions={rutaViaje.map(u => [u.latitud, u.longitud])} 
                       pathOptions={{ color: '#10b981', weight: 4, opacity: 0.8 }} 
                     />
 
-                    {/* Marcador Inicial */}
                     <Marker position={[rutaViaje[0].latitud, rutaViaje[0].longitud]} icon={startIcon}>
                       <Popup>
                         <div className="text-slate-950 font-sans">
@@ -341,7 +379,6 @@ export default function HistorialViajes() {
                       </Popup>
                     </Marker>
 
-                    {/* Marcador Final */}
                     <Marker position={[rutaViaje[rutaViaje.length - 1].latitud, rutaViaje[rutaViaje.length - 1].longitud]} icon={endIcon}>
                       <Popup>
                         <div className="text-slate-950 font-sans">
@@ -351,11 +388,9 @@ export default function HistorialViajes() {
                       </Popup>
                     </Marker>
 
-                    {/* Centrado automático */}
                     <FitBounds positions={rutaViaje.map(u => [u.latitud, u.longitud])} />
                   </MapContainer>
                   
-                  {/* Detalles rápidos */}
                   <div className="absolute bottom-4 left-4 z-[999] bg-lazdin-surface/95 border border-slate-800 p-3 rounded-lg shadow-xl text-xs space-y-1 text-slate-300">
                     <p><strong className="text-white">Puntos de GPS:</strong> {rutaViaje.length}</p>
                     <p><strong className="text-white">Inicio:</strong> {format(new Date(rutaViaje[0].timestamp), 'dd/MM/yyyy HH:mm')}</p>
@@ -365,6 +400,83 @@ export default function HistorialViajes() {
               )}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Modal Comprobante de Entrega */}
+      {entregaSeleccionada && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[999] flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-lazdin-surface border border-slate-800 w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl p-6">
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-800">
+              <h3 className="font-bold text-white text-base">Firma & Remito de Entrega</h3>
+              <button
+                onClick={() => setEntregaSeleccionada(null)}
+                className="text-slate-400 hover:text-white"
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+
+            {(() => {
+              const ent = entregaSeleccionada.entregas?.[0]
+              const fotos = [ent?.foto_remito_1_url, ent?.foto_remito_2_url, ent?.foto_remito_3_url].filter(Boolean)
+
+              return (
+                <div className="space-y-4 text-xs">
+                  <div className="bg-slate-900/60 p-3.5 rounded-xl border border-slate-800 space-y-1 text-slate-300">
+                    <p><strong className="text-white">Cliente:</strong> {entregaSeleccionada.cliente_rel?.nombre_empresa || entregaSeleccionada.cliente || '—'}</p>
+                    <p><strong className="text-white">Recibió:</strong> {ent?.contacto_nombre || '—'}</p>
+                    <p><strong className="text-white">Fecha:</strong> {ent?.fecha_completada ? format(new Date(ent.fecha_completada), 'dd/MM/yyyy HH:mm') : '—'}</p>
+                  </div>
+
+                  {ent?.firma_url && (
+                    <div>
+                      <p className="text-slate-400 uppercase font-bold text-[10px] mb-1.5">Firma de Quien Recibe</p>
+                      <div className="bg-white p-3 rounded-xl max-w-xs border border-slate-700">
+                        <img src={ent.firma_url} alt="Firma" className="h-20 mx-auto object-contain" />
+                      </div>
+                    </div>
+                  )}
+
+                  {fotos.length > 0 && (
+                    <div>
+                      <p className="text-slate-400 uppercase font-bold text-[10px] mb-1.5">Fotos de Remito ({fotos.length})</p>
+                      <div className="grid grid-cols-3 gap-2">
+                        {fotos.map((url, i) => (
+                          <img
+                            key={i}
+                            src={url}
+                            alt={`Remito ${i + 1}`}
+                            onClick={() => setFotoModal(url)}
+                            className="aspect-square object-cover rounded-lg border border-slate-700 cursor-pointer hover:opacity-80"
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="pt-2 flex justify-end">
+                    <button
+                      onClick={() => setEntregaSeleccionada(null)}
+                      className="px-4 py-2 bg-slate-800 text-slate-200 font-bold rounded-xl"
+                    >
+                      Cerrar
+                    </button>
+                  </div>
+                </div>
+              )
+            })()}
+          </div>
+        </div>
+      )}
+
+      {/* Modal Zoom Foto */}
+      {fotoModal && (
+        <div 
+          onClick={() => setFotoModal(null)}
+          className="fixed inset-0 bg-slate-950/95 z-[1000] flex items-center justify-center p-4 cursor-zoom-out"
+        >
+          <img src={fotoModal} alt="Remito Ampliado" className="max-w-full max-h-full object-contain rounded-xl" />
         </div>
       )}
     </div>

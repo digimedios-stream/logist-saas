@@ -7,9 +7,11 @@ import AdminLayout from '@/components/layout/AdminLayout'
 import ChoferLayout from '@/components/layout/ChoferLayout'
 import SuperAdminLayout from '@/components/layout/SuperAdminLayout'
 
-// Admin Pages
+// Landing & Login
 import Landing from '@/pages/Landing'
 import Login from '@/pages/Login'
+
+// Admin Pages
 import AdminDashboard from '@/pages/admin/Dashboard'
 import Vehiculos from '@/pages/admin/Vehiculos'
 import VehiculoForm from '@/pages/admin/VehiculoForm'
@@ -32,6 +34,13 @@ import AdminNovedades from '@/pages/admin/Novedades'
 import MapaVisibilidad from '@/pages/admin/MapaVisibilidad'
 import HistorialViajes from '@/pages/admin/HistorialViajes'
 
+// Nuevas Páginas Admin (Clientes, Finanzas, Entregas)
+import Clientes from '@/pages/admin/Clientes'
+import ClienteForm from '@/pages/admin/ClienteForm'
+import Finanzas from '@/pages/admin/Finanzas'
+import PresupuestoForm from '@/pages/admin/PresupuestoForm'
+import GestionEntregas from '@/pages/admin/GestionEntregas'
+
 // Chofer Pages
 import ChoferDashboard from '@/pages/chofer/Dashboard'
 import ChoferTurno from '@/pages/chofer/Turno'
@@ -39,11 +48,16 @@ import ChoferCombustible from '@/pages/chofer/Combustible'
 import ChoferNovedades from '@/pages/chofer/Novedades'
 import ChoferMantenimientos from '@/pages/chofer/Mantenimientos'
 import TrackingViaje from '@/pages/chofer/TrackingViaje'
+import ChoferEntregaCarga from '@/pages/chofer/EntregaCarga'
 
 // SuperAdmin Pages
 import SuperAdminDashboard from '@/pages/superadmin/Dashboard'
 import GestionEmpresas from '@/pages/superadmin/GestionEmpresas'
 import EmpresaDetalle from '@/pages/superadmin/EmpresaDetalle'
+
+// Páginas Públicas (Tracking y Monitor TV)
+import TrackingPublico from '@/pages/TrackingPublico'
+import MonitorFlota from '@/pages/MonitorFlota'
 
 // ── Pantalla de carga ──────────────────────────────────────────────
 function LoadingScreen() {
@@ -143,6 +157,10 @@ export default function App() {
           }
         />
 
+        {/* ── Rutas Públicas (Sin Autenticación) ──────────────── */}
+        <Route path="/tracking/:token" element={<TrackingPublico />} />
+        <Route path="/monitor/:token" element={<MonitorFlota />} />
+
         {/* ── Rutas Admin ────────────────────────────────────── */}
         <Route
           path="/admin"
@@ -153,6 +171,8 @@ export default function App() {
           }
         >
           <Route index element={<AdminDashboard />} />
+          
+          {/* Flota y Personal */}
           <Route path="vehiculos" element={<Vehiculos />} />
           <Route path="vehiculos/nuevo" element={<VehiculoForm />} />
           <Route path="vehiculos/:id/editar" element={<VehiculoForm />} />
@@ -160,8 +180,26 @@ export default function App() {
           <Route path="choferes" element={<Choferes />} />
           <Route path="choferes/nuevo" element={<ChoferForm />} />
           <Route path="choferes/:id/editar" element={<ChoferForm />} />
+          
+          {/* Clientes */}
+          <Route path="clientes" element={<Clientes />} />
+          <Route path="clientes/nuevo" element={<ClienteForm />} />
+          <Route path="clientes/:id/editar" element={<ClienteForm />} />
+
+          {/* Finanzas y Presupuestos */}
+          <Route path="finanzas" element={<Finanzas />} />
+          <Route path="finanzas/nuevo" element={<PresupuestoForm />} />
+          <Route path="finanzas/:id/editar" element={<PresupuestoForm />} />
+
+          {/* Gestión de Retiros y Entregas */}
+          <Route path="entregas" element={<GestionEntregas />} />
+
+          {/* Operaciones y Mantenimiento */}
           <Route path="mantenimientos" element={<Mantenimientos />} />
           <Route path="usuarios" element={<Usuarios />} />
+          <Route path="mapa" element={<MapaVisibilidad />} />
+          <Route path="historial" element={<HistorialViajes />} />
+
           {/* Rutas con módulo requerido */}
           <Route path="combustible"   element={<ModuleRoute modulo="combustible"><Combustible /></ModuleRoute>} />
           <Route path="seguros"       element={<ModuleRoute modulo="seguros"><Seguros /></ModuleRoute>} />
@@ -170,8 +208,6 @@ export default function App() {
           <Route path="mecanicos"     element={<ModuleRoute modulo="mecanicos"><Mecanicos /></ModuleRoute>} />
           <Route path="vtv"           element={<ModuleRoute modulo="vtv"><VtvRto /></ModuleRoute>} />
           <Route path="reportes"      element={<ModuleRoute modulo="reportes"><Reportes /></ModuleRoute>} />
-          <Route path="mapa"          element={<MapaVisibilidad />} />
-          <Route path="historial"     element={<HistorialViajes />} />
           <Route path="logs"          element={<ModuleRoute modulo="logs"><LogsActividad /></ModuleRoute>} />
           <Route path="liquidaciones" element={<ModuleRoute modulo="liquidaciones"><Liquidaciones /></ModuleRoute>} />
           <Route path="documentos"    element={<ModuleRoute modulo="documentos"><Documentos /></ModuleRoute>} />
@@ -193,6 +229,8 @@ export default function App() {
           <Route path="novedades" element={<ChoferNovedades />} />
           <Route path="mantenimientos" element={<ChoferMantenimientos />} />
           <Route path="tracking" element={<TrackingViaje />} />
+          <Route path="entrega" element={<ChoferEntregaCarga />} />
+          <Route path="entrega/:viajeId" element={<ChoferEntregaCarga />} />
         </Route>
 
         {/* ── Rutas SuperAdmin ────────────────────────────────── */}

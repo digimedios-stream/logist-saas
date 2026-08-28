@@ -9,6 +9,9 @@ import iconoImg from '@/assets/icono.png'
 // `soloSuperAdmin`: solo visible para el rol superadmin.
 const ALL_NAV_ITEMS = [
   { to: '/admin',                icon: 'dashboard',           label: 'Panel Control',   end: true },
+  { to: '/admin/clientes',       icon: 'business',            label: 'Clientes' },
+  { to: '/admin/entregas',       icon: 'package_2',           label: 'Retiros y Entregas' },
+  { to: '/admin/finanzas',       icon: 'account_balance',     label: 'Finanzas' },
   { to: '/admin/lineas',         icon: 'route',               label: 'Líneas / Rutas',  modulo: 'lineas' },
   { to: '/admin/mapa',           icon: 'map',                 label: 'Mapa Rutas' },
   { to: '/admin/historial',      icon: 'history_toggle_off',  label: 'Historial Viajes' },
@@ -30,9 +33,9 @@ const ALL_NAV_ITEMS = [
 
 const MOBILE_NAV = [
   { to: '/admin',           icon: 'dashboard',      label: 'Panel',    end: true },
+  { to: '/admin/clientes',  icon: 'business',       label: 'Clientes' },
+  { to: '/admin/entregas',  icon: 'package_2',      label: 'Entregas' },
   { to: '/admin/vehiculos', icon: 'local_shipping', label: 'Flota' },
-  { to: '/admin/choferes',  icon: 'group',          label: 'Choferes' },
-  { to: '/admin/reportes',  icon: 'analytics',      label: 'Reportes' },
 ]
 
 export default function AdminLayout() {

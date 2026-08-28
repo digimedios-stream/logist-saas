@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { registerPlugin } from '@capacitor/core'
 import { Geolocation } from '@capacitor/geolocation'
 import { LocalNotifications } from '@capacitor/local-notifications'
+import { generarLinkWhatsApp, generarMensajeTracking } from '@/services/whatsappService'
 
 const BackgroundGeolocation = registerPlugin('BackgroundGeolocation')
 
@@ -20,12 +22,24 @@ function getDistance(lat1, lon1, lat2, lon2) {
 }
 
 export default function TrackingViaje() {
-  const { user } = useAuth()
+  const { user, empresaData } = useAuth()
+  const navigate = useNavigate()
   const [viajeActivo, setViajeActivo] = useState(null)
+  const [clienteData, setClienteData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [tracking, setTracking] = useState(false)
   const [errorGps, setErrorGps] = useState('')
   const [ubicacionActual, setUbicacionActual] = useState(null)
+  
+  // Estado descanso
+  const [enDescanso, setEnDescanso] = useState(false)
+  const [horaDescanso, setHoraDescanso] = useState(null)
+  
+  // Estado regreso a planta
+  const [enRegreso, setEnRegreso] = useState(false)
+  
+  // UI feedback
+  const [enviandoUbicacion, setEnviandoUbicacion] = useState(false)
   
   const watchId = useRef(null)
   const ultimaCoordenada = useRef(null)
@@ -50,7 +64,7 @@ export default function TrackingViaje() {
         // Buscar un viaje activo para este chofer
         const { data: viajeData } = await supabase
           .from('viajes')
-          .select('*')
+          .select('*, cliente:cliente_id(nombre_empresa, celular, nombre_responsable)')
           .eq('chofer_id', roleData.chofer_id)
           .neq('estado', 'finalizado')
           .order('created_at', { ascending: false })
@@ -59,7 +73,17 @@ export default function TrackingViaje() {
 
         if (viajeData) {
           setViajeActivo(viajeData)
-          if (viajeData.estado === 'en_ruta' || viajeData.estado === 'atrasado') {
+          setClienteData(viajeData.cliente)
+          
+          // Restaurar estado descanso/regreso si corresponde
+          if (viajeData.estado === 'descanso') {
+            setEnDescanso(true)
+            setHoraDescanso(new Date()) // Aproximado, se podría mejorar con el log
+          } else if (viajeData.estado === 'regreso_planta') {
+            setEnRegreso(true)
+          }
+          
+          if (['en_ruta', 'atrasado', 'entregando', 'regreso_planta'].includes(viajeData.estado)) {
             iniciarTracking(viajeData.id)
           }
         }
@@ -225,9 +249,12 @@ export default function TrackingViaje() {
     }
   }
 
+  // ── HANDLERS DE ESTADO ─────────────────────────────────────
+
   const handleIniciarViaje = async () => {
     if (!viajeActivo) return
     try {
+      await registrarCambioEstado(viajeActivo.estado, 'en_ruta', 'Viaje iniciado')
       await supabase.from('viajes').update({ estado: 'en_ruta' }).eq('id', viajeActivo.id)
       setViajeActivo({ ...viajeActivo, estado: 'en_ruta' })
       iniciarTracking(viajeActivo.id)
@@ -239,16 +266,185 @@ export default function TrackingViaje() {
   const handleFinalizarViaje = async () => {
     if (!viajeActivo) return
     try {
-      await supabase.from('viajes').update({ estado: 'finalizado', fecha_fin: new Date().toISOString() }).eq('id', viajeActivo.id)
+      await registrarCambioEstado(viajeActivo.estado, 'finalizado', 'Viaje finalizado')
+      await supabase.from('viajes').update({ 
+        estado: 'finalizado', 
+        fecha_fin: new Date().toISOString(),
+        disponible_reasignacion: false 
+      }).eq('id', viajeActivo.id)
       setViajeActivo(null)
+      setEnDescanso(false)
+      setEnRegreso(false)
       detenerTracking()
     } catch (err) {
       console.error('Error al finalizar', err)
     }
   }
 
+  // ── BOTÓN: EN DESCANSO ──────────────────────────────────────
+
+  const handleActivarDescanso = async () => {
+    if (!viajeActivo) return
+    try {
+      await registrarCambioEstado(viajeActivo.estado, 'descanso', 'Chofer en descanso')
+      await supabase.from('viajes').update({ estado: 'descanso' }).eq('id', viajeActivo.id)
+      setViajeActivo({ ...viajeActivo, estado: 'descanso' })
+      setEnDescanso(true)
+      setHoraDescanso(new Date())
+      detenerTracking() // Detener GPS durante descanso
+    } catch (err) {
+      console.error('Error al activar descanso:', err)
+    }
+  }
+
+  const handleDesactivarDescanso = async () => {
+    if (!viajeActivo) return
+    try {
+      await registrarCambioEstado('descanso', 'en_ruta', 'Descanso finalizado, retomando viaje')
+      await supabase.from('viajes').update({ estado: 'en_ruta' }).eq('id', viajeActivo.id)
+      setViajeActivo({ ...viajeActivo, estado: 'en_ruta' })
+      setEnDescanso(false)
+      setHoraDescanso(null)
+      iniciarTracking(viajeActivo.id) // Reanudar GPS
+    } catch (err) {
+      console.error('Error al desactivar descanso:', err)
+    }
+  }
+
+  // ── BOTÓN: ENVIAR UBICACIÓN AL CLIENTE ──────────────────────
+
+  const handleEnviarUbicacion = async () => {
+    if (!viajeActivo) return
+    
+    const celular = clienteData?.celular || viajeActivo.cliente?.celular
+    const nombre = clienteData?.nombre_empresa || clienteData?.nombre_responsable || viajeActivo.cliente || 'Cliente'
+    
+    if (!celular) {
+      alert('Este viaje no tiene un cliente con número de celular asignado.')
+      return
+    }
+
+    setEnviandoUbicacion(true)
+    try {
+      // Buscar token existente o crear uno nuevo
+      let token = null
+      const { data: existingToken } = await supabase
+        .from('tracking_tokens')
+        .select('token')
+        .eq('viaje_id', viajeActivo.id)
+        .eq('activo', true)
+        .maybeSingle()
+
+      if (existingToken?.token) {
+        token = existingToken.token
+      } else {
+        const { data: newToken, error: tokenErr } = await supabase
+          .from('tracking_tokens')
+          .insert({ viaje_id: viajeActivo.id })
+          .select('token')
+          .single()
+        
+        if (tokenErr) throw tokenErr
+        token = newToken.token
+      }
+
+      // Generar y abrir link de WhatsApp
+      const mensaje = generarMensajeTracking(nombre, token)
+      const link = generarLinkWhatsApp(celular, mensaje)
+      window.open(link, '_blank')
+
+    } catch (err) {
+      console.error('Error al enviar ubicación:', err)
+      alert('Error al generar el link de tracking.')
+    } finally {
+      setEnviandoUbicacion(false)
+    }
+  }
+
+  // ── BOTÓN: REGRESO A PLANTA ─────────────────────────────────
+
+  const handleRegresoPlanta = async () => {
+    if (!viajeActivo) return
+    
+    try {
+      const updateData = {
+        estado: 'regreso_planta',
+        disponible_reasignacion: true,
+        fecha_regreso_planta: new Date().toISOString(),
+      }
+
+      // Guardar coordenadas de regreso si están disponibles
+      if (ubicacionActual) {
+        updateData.ubicacion_regreso_lat = ubicacionActual.latitude
+        updateData.ubicacion_regreso_lon = ubicacionActual.longitude
+      }
+
+      await registrarCambioEstado(viajeActivo.estado, 'regreso_planta', 'Chofer regresando a planta')
+      await supabase.from('viajes').update(updateData).eq('id', viajeActivo.id)
+      setViajeActivo({ ...viajeActivo, ...updateData })
+      setEnRegreso(true)
+
+    } catch (err) {
+      console.error('Error al marcar regreso a planta:', err)
+    }
+  }
+
+  // ── HELPER: Registrar cambio de estado ──────────────────────
+
+  async function registrarCambioEstado(estadoAnterior, estadoNuevo, motivo) {
+    try {
+      await supabase.from('viaje_estados_log').insert({
+        viaje_id: viajeActivo.id,
+        estado_anterior: estadoAnterior,
+        estado_nuevo: estadoNuevo,
+        motivo,
+        latitud: ubicacionActual?.latitude || null,
+        longitud: ubicacionActual?.longitude || null,
+      })
+    } catch (err) {
+      console.warn('Error registrando log de estado:', err)
+    }
+  }
+
+  // ── RENDER ──────────────────────────────────────────────────
+
   if (loading) {
     return <div className="p-4 text-center text-slate-400">Cargando...</div>
+  }
+
+  // ── OVERLAY DESCANSO (fullscreen) ───────────────────────────
+  if (enDescanso && viajeActivo) {
+    return (
+      <div className="fixed inset-0 bg-amber-900/95 z-[100] flex flex-col items-center justify-center p-8 animate-in fade-in duration-500">
+        <div className="text-center max-w-sm">
+          <div className="w-28 h-28 bg-amber-500/20 rounded-full flex items-center justify-center mx-auto mb-8 animate-pulse">
+            <span className="material-symbols-outlined text-6xl text-amber-300">coffee</span>
+          </div>
+          
+          <h1 className="text-3xl font-black text-amber-100 uppercase tracking-wide mb-3">
+            Modo Descanso
+          </h1>
+          <p className="text-amber-200/70 mb-2">GPS pausado — El rastreo se reanudará al reactivar</p>
+          {horaDescanso && (
+            <p className="text-amber-300 font-mono text-lg mb-10">
+              Desde las {horaDescanso.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}
+            </p>
+          )}
+
+          <button
+            onClick={handleDesactivarDescanso}
+            className="w-full bg-white text-amber-900 font-black text-lg py-4 rounded-2xl shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-3"
+          >
+            <span className="material-symbols-outlined text-2xl">play_circle</span>
+            REACTIVAR VIAJE
+          </button>
+
+          <p className="text-amber-200/40 text-xs mt-6 uppercase tracking-widest">
+            Toque el botón para continuar el viaje
+          </p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -260,7 +456,7 @@ export default function TrackingViaje() {
         </h1>
       </div>
 
-      <div className="flex-1 p-6 flex flex-col items-center justify-center gap-6">
+      <div className="flex-1 p-6 flex flex-col items-center justify-start gap-6 overflow-y-auto pb-24">
         {!viajeActivo ? (
           <div className="text-center bg-lazdin-surface p-8 rounded-2xl border border-slate-800 max-w-sm">
             <span className="material-symbols-outlined text-6xl text-slate-600 mb-4 block">check_circle</span>
@@ -276,6 +472,7 @@ export default function TrackingViaje() {
               </div>
             )}
 
+            {/* Tarjeta de viaje */}
             <div className="bg-lazdin-surface border border-slate-700 rounded-2xl p-6 shadow-xl relative overflow-hidden">
               {tracking && (
                 <div className="absolute top-0 left-0 w-full h-1 bg-emerald-500/20">
@@ -283,17 +480,29 @@ export default function TrackingViaje() {
                 </div>
               )}
               
-              <div className="flex justify-between items-start mb-4">
+              {/* Badge regreso */}
+              {enRegreso && (
+                <div className="absolute top-0 left-0 w-full bg-blue-500/20 text-blue-400 text-xs font-bold text-center py-1.5 uppercase tracking-widest">
+                  🏭 Regresando a Planta — Disponible para reasignación
+                </div>
+              )}
+              
+              <div className={`flex justify-between items-start mb-4 ${enRegreso ? 'mt-6' : ''}`}>
                 <h3 className="font-bold text-white text-lg">Viaje Actual</h3>
-                <span className="px-2 py-1 rounded bg-slate-800 text-slate-300 text-xs font-bold uppercase tracking-wider">
-                  {viajeActivo.estado.replace('_', ' ')}
+                <span className={`px-2 py-1 rounded text-xs font-bold uppercase tracking-wider ${
+                  viajeActivo.estado === 'descanso' ? 'bg-amber-500/20 text-amber-400' :
+                  viajeActivo.estado === 'regreso_planta' ? 'bg-blue-500/20 text-blue-400' :
+                  viajeActivo.estado === 'entregando' ? 'bg-purple-500/20 text-purple-400' :
+                  'bg-slate-800 text-slate-300'
+                }`}>
+                  {viajeActivo.estado.replace(/_/g, ' ')}
                 </span>
               </div>
               
               <div className="flex flex-col gap-3 text-sm text-lazdin-on-surface-variant mb-6">
                 <div className="flex gap-3 items-center">
-                  <span className="material-symbols-outlined text-slate-500 text-[18px]">local_shipping</span>
-                  <span className="font-medium text-white">{viajeActivo.cliente || 'Sin cliente'}</span>
+                  <span className="material-symbols-outlined text-slate-500 text-[18px]">business</span>
+                  <span className="font-medium text-white">{clienteData?.nombre_empresa || viajeActivo.cliente || 'Sin cliente'}</span>
                 </div>
                 <div className="flex gap-3 items-center">
                   <span className="material-symbols-outlined text-slate-500 text-[18px]">trip_origin</span>
@@ -312,13 +521,66 @@ export default function TrackingViaje() {
                 </div>
               )}
 
+              {/* Botones principales */}
               {tracking ? (
-                <button 
-                  onClick={handleFinalizarViaje}
-                  className="w-full bg-red-500/10 hover:bg-red-500/20 text-red-500 font-bold py-3 rounded-xl transition-all border border-red-500/20"
-                >
-                  FINALIZAR VIAJE
-                </button>
+                <div className="space-y-3">
+                  {/* Acciones del viaje en curso */}
+                  <div className="grid grid-cols-2 gap-3">
+                    {/* Botón Descanso */}
+                    <button
+                      onClick={handleActivarDescanso}
+                      className="bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 font-bold py-3 rounded-xl transition-all border border-amber-500/20 flex flex-col items-center gap-1 text-xs active:scale-95"
+                    >
+                      <span className="material-symbols-outlined text-xl">coffee</span>
+                      En Descanso
+                    </button>
+
+                    {/* Botón Enviar Ubicación */}
+                    <button
+                      onClick={handleEnviarUbicacion}
+                      disabled={enviandoUbicacion}
+                      className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold py-3 rounded-xl transition-all border border-emerald-500/20 flex flex-col items-center gap-1 text-xs active:scale-95 disabled:opacity-50"
+                    >
+                      <span className="material-symbols-outlined text-xl">share_location</span>
+                      {enviandoUbicacion ? 'Enviando...' : 'Enviar Ubicación'}
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    {/* Botón Registrar Entrega */}
+                    <button
+                      onClick={() => navigate(`/chofer/entrega/${viajeActivo.id}`)}
+                      className="bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 font-bold py-3 rounded-xl transition-all border border-purple-500/20 flex flex-col items-center gap-1 text-xs active:scale-95"
+                    >
+                      <span className="material-symbols-outlined text-xl">package_2</span>
+                      Registrar Entrega
+                    </button>
+
+                    {/* Botón Regreso a Planta */}
+                    {!enRegreso ? (
+                      <button
+                        onClick={handleRegresoPlanta}
+                        className="bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 font-bold py-3 rounded-xl transition-all border border-blue-500/20 flex flex-col items-center gap-1 text-xs active:scale-95"
+                      >
+                        <span className="material-symbols-outlined text-xl">factory</span>
+                        Regreso a Planta
+                      </button>
+                    ) : (
+                      <div className="bg-blue-500/10 text-blue-400 font-bold py-3 rounded-xl border border-blue-500/20 flex flex-col items-center justify-center gap-1 text-xs">
+                        <span className="material-symbols-outlined text-xl">check_circle</span>
+                        Regreso Activo
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Finalizar Viaje */}
+                  <button 
+                    onClick={handleFinalizarViaje}
+                    className="w-full bg-red-500/10 hover:bg-red-500/20 text-red-500 font-bold py-3 rounded-xl transition-all border border-red-500/20 mt-2"
+                  >
+                    FINALIZAR VIAJE
+                  </button>
+                </div>
               ) : (
                 <button 
                   onClick={handleIniciarViaje}

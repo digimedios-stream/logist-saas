@@ -245,4 +245,8 @@
   .animate-in {
     animation: fade-in 0.2s ease-out;
   }
+  /* Estilo oscuro limpio para tiles de mapa sin marcas de agua */
+  .leaflet-layer-dark {
+    filter: brightness(0.65) invert(1) contrast(2.8) hue-rotate(205deg) saturate(0.25) brightness(0.85);
+  }
 }

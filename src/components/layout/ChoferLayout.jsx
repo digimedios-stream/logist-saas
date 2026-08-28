@@ -9,10 +9,11 @@ import { supabase } from '@/lib/supabase'
 const NAV_ITEMS = [
   { to: '/chofer', icon: 'dashboard', label: 'Inicio', end: true },
   { to: '/chofer/turno', icon: 'play_circle', label: 'Turno' },
+  { to: '/chofer/tracking', icon: 'location_on', label: 'Rastreo' },
+  { to: '/chofer/entrega', icon: 'package_2', label: 'Entrega' },
   { to: '/chofer/combustible', icon: 'local_gas_station', label: 'Combustible' },
   { to: '/chofer/novedades', icon: 'report', label: 'Novedades' },
   { to: '/chofer/mantenimientos', icon: 'build', label: 'Mantenimientos' },
-  { to: '/chofer/tracking', icon: 'location_on', label: 'Rastreo' },
 ]
 
 export default function ChoferLayout() {
