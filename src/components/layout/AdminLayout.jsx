@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Outlet, NavLink, useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTheme } from '@/contexts/ThemeContext'
 import iconoImg from '@/assets/icono.png'
@@ -9,22 +9,36 @@ import iconoImg from '@/assets/icono.png'
 // `soloSuperAdmin`: solo visible para el rol superadmin.
 const ALL_NAV_ITEMS = [
   { to: '/admin',                icon: 'dashboard',           label: 'Panel Control',   end: true },
-  { to: '/admin/clientes',       icon: 'business',            label: 'Clientes' },
-  { to: '/admin/entregas',       icon: 'package_2',           label: 'Retiros y Entregas' },
+  {
+    label: 'Gestión DMS',
+    icon: 'route',
+    type: 'group',
+    items: [
+      { to: '/admin/clientes',       icon: 'business',            label: 'Clientes' },
+      { to: '/admin/entregas',       icon: 'package_2',           label: 'Retiros y Entregas' },
+      { to: '/admin/lineas',         icon: 'route',               label: 'Líneas / Rutas',  modulo: 'lineas' },
+      { to: '/admin/mapa',           icon: 'map',                 label: 'Mapa Rutas' },
+      { to: '/admin/historial',      icon: 'history_toggle_off',  label: 'Historial Viajes' },
+      { to: '/admin/novedades',      icon: 'notifications_active', label: 'Novedades',      modulo: 'novedades' },
+    ]
+  },
+  {
+    label: 'Gestión TMS',
+    icon: 'local_shipping',
+    type: 'group',
+    items: [
+      { to: '/admin/vehiculos',      icon: 'directions_car',      label: 'Flota' },
+      { to: '/admin/choferes',       icon: 'group',               label: 'Choferes' },
+      { to: '/admin/combustible',    icon: 'local_gas_station',   label: 'Combustible',     modulo: 'combustible' },
+      { to: '/admin/mantenimientos', icon: 'build',               label: 'Mantenimientos' },
+      { to: '/admin/mecanicos',      icon: 'engineering',         label: 'Mecánicos',       modulo: 'mecanicos' },
+      { to: '/admin/seguros',        icon: 'shield',              label: 'Seguros',         modulo: 'seguros' },
+      { to: '/admin/vtv',            icon: 'verified',            label: 'VTV / RTO',       modulo: 'vtv' },
+      { to: '/admin/multas',         icon: 'gavel',               label: 'Multas',          modulo: 'multas' },
+      { to: '/admin/documentos',     icon: 'description',         label: 'Documentos',      modulo: 'documentos' },
+    ]
+  },
   { to: '/admin/finanzas',       icon: 'account_balance',     label: 'Finanzas' },
-  { to: '/admin/lineas',         icon: 'route',               label: 'Líneas / Rutas',  modulo: 'lineas' },
-  { to: '/admin/mapa',           icon: 'map',                 label: 'Mapa Rutas' },
-  { to: '/admin/historial',      icon: 'history_toggle_off',  label: 'Historial Viajes' },
-  { to: '/admin/novedades',      icon: 'notifications_active', label: 'Novedades',      modulo: 'novedades' },
-  { to: '/admin/vehiculos',      icon: 'local_shipping',      label: 'Flota' },
-  { to: '/admin/choferes',       icon: 'group',               label: 'Choferes' },
-  { to: '/admin/combustible',    icon: 'local_gas_station',   label: 'Combustible',     modulo: 'combustible' },
-  { to: '/admin/mantenimientos', icon: 'build',               label: 'Mantenimientos' },
-  { to: '/admin/mecanicos',      icon: 'engineering',         label: 'Mecánicos',       modulo: 'mecanicos' },
-  { to: '/admin/seguros',        icon: 'shield',              label: 'Seguros',         modulo: 'seguros' },
-  { to: '/admin/vtv',            icon: 'verified',            label: 'VTV / RTO',       modulo: 'vtv' },
-  { to: '/admin/multas',         icon: 'gavel',               label: 'Multas',          modulo: 'multas' },
-  { to: '/admin/documentos',     icon: 'description',         label: 'Documentos',      modulo: 'documentos' },
   { to: '/admin/liquidaciones',  icon: 'payments',            label: 'Liquidaciones',   modulo: 'liquidaciones' },
   { to: '/admin/usuarios',       icon: 'manage_accounts',     label: 'Usuarios' },
   { to: '/admin/reportes',       icon: 'analytics',           label: 'Reportes',        modulo: 'reportes' },
@@ -42,14 +56,39 @@ export default function AdminLayout() {
   const { user, logout, adminNombre, choferData, tieneModulo, empresaData, isSuperAdmin } = useAuth()
   const { tema, modoClaro, toggleTemaClaroOscuro } = useTheme()
   const navigate = useNavigate()
+  const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
+  
+  // Estado para controlar qué menús agrupados están abiertos
+  const [openGroups, setOpenGroups] = useState(() => {
+    const initial = {}
+    ALL_NAV_ITEMS.forEach(item => {
+      if (item.type === 'group' && item.items.some(sub => location.pathname.startsWith(sub.to))) {
+        initial[item.label] = true
+      }
+    })
+    return initial
+  })
+
+  const toggleGroup = (groupLabel) => {
+    setOpenGroups(prev => ({ ...prev, [groupLabel]: !prev[groupLabel] }))
+  }
 
   // Filtrar ítems según módulos activos de la empresa
-  const NAV_ITEMS = ALL_NAV_ITEMS.filter(item => {
-    if (item.modulo) return tieneModulo(item.modulo)
-    return true
-  })
+  const NAV_ITEMS = ALL_NAV_ITEMS.map(item => {
+    if (item.type === 'group') {
+      const filteredItems = item.items.filter(subItem => {
+        if (subItem.modulo) return tieneModulo(subItem.modulo)
+        return true
+      })
+      if (filteredItems.length === 0) return null
+      return { ...item, items: filteredItems }
+    } else {
+      if (item.modulo && !tieneModulo(item.modulo)) return null
+      return item
+    }
+  }).filter(Boolean)
 
   const handleLogout = async () => {
     await logout()
@@ -105,29 +144,87 @@ export default function AdminLayout() {
 
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto px-3 space-y-0.5 custom-scrollbar">
-          {NAV_ITEMS.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.end}
-              onClick={() => {
-                if (window.innerWidth < 768) setSidebarOpen(false)
-              }}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ease-in-out duration-200 group ${
-                  isActive
-                    ? tema.sidebarActive
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
-                } ${!sidebarOpen && 'md:justify-center md:px-2'}`
-              }
-              title={!sidebarOpen ? item.label : undefined}
-            >
-              <span className="material-symbols-outlined text-[20px]">{item.icon}</span>
-              {(sidebarOpen || (window.innerWidth < 768)) && (
-                <span className={`text-sm font-medium truncate ${!sidebarOpen && 'md:hidden'}`}>{item.label}</span>
-              )}
-            </NavLink>
-          ))}
+          {NAV_ITEMS.map((item) => {
+            if (item.type === 'group') {
+              const isOpen = openGroups[item.label] || false;
+              const isAnyChildActive = item.items.some(sub => location.pathname.startsWith(sub.to));
+
+              return (
+                <div key={item.label} className="flex flex-col space-y-0.5">
+                  <button
+                    onClick={() => {
+                      if (!sidebarOpen) setSidebarOpen(true);
+                      toggleGroup(item.label);
+                    }}
+                    className={`flex items-center justify-between px-3 py-2.5 rounded-lg transition-all ease-in-out duration-200 group ${
+                      isAnyChildActive && !isOpen && !sidebarOpen
+                        ? tema.sidebarActive
+                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+                    } ${!sidebarOpen && 'md:justify-center md:px-2'}`}
+                    title={!sidebarOpen ? item.label : undefined}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className={`material-symbols-outlined text-[20px] ${isAnyChildActive && !isOpen ? 'text-lazdin-emerald' : ''}`}>{item.icon}</span>
+                      {(sidebarOpen || (window.innerWidth < 768)) && (
+                        <span className={`text-sm font-medium truncate ${isAnyChildActive ? 'text-lazdin-emerald' : ''} ${!sidebarOpen && 'md:hidden'}`}>{item.label}</span>
+                      )}
+                    </div>
+                    {(sidebarOpen || (window.innerWidth < 768)) && (
+                      <span className={`material-symbols-outlined text-sm transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}>expand_more</span>
+                    )}
+                  </button>
+                  {isOpen && sidebarOpen && (
+                    <div className="pl-4 pr-2 space-y-0.5 pt-1">
+                      {item.items.map(subItem => (
+                        <NavLink
+                          key={subItem.to}
+                          to={subItem.to}
+                          end={subItem.end}
+                          onClick={() => {
+                            if (window.innerWidth < 768) setSidebarOpen(false)
+                          }}
+                          className={({ isActive }) =>
+                            `flex items-center gap-3 px-3 py-2 rounded-lg transition-all ease-in-out duration-200 group ${
+                              isActive
+                                ? tema.sidebarActive
+                                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/20'
+                            }`
+                          }
+                        >
+                          <span className="material-symbols-outlined text-[18px]">{subItem.icon}</span>
+                          <span className="text-sm font-medium truncate">{subItem.label}</span>
+                        </NavLink>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )
+            }
+
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.end}
+                onClick={() => {
+                  if (window.innerWidth < 768) setSidebarOpen(false)
+                }}
+                className={({ isActive }) =>
+                  `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ease-in-out duration-200 group ${
+                    isActive
+                      ? tema.sidebarActive
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+                  } ${!sidebarOpen && 'md:justify-center md:px-2'}`
+                }
+                title={!sidebarOpen ? item.label : undefined}
+              >
+                <span className="material-symbols-outlined text-[20px]">{item.icon}</span>
+                {(sidebarOpen || (window.innerWidth < 768)) && (
+                  <span className={`text-sm font-medium truncate ${!sidebarOpen && 'md:hidden'}`}>{item.label}</span>
+                )}
+              </NavLink>
+            )
+          })}
         </nav>
 
         {/* Bottom section */}
