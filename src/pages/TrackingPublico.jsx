@@ -3,19 +3,14 @@ import { useParams } from 'react-router-dom'
 import { createClient } from '@supabase/supabase-js'
 import { MapContainer, TileLayer, Marker, Polyline, useMap } from 'react-leaflet'
 import L from 'leaflet'
+import { format } from 'date-fns'
+import { crearTruckMarkerIcon } from '@/lib/markerIcons'
 import 'leaflet/dist/leaflet.css'
 
 // Cliente Supabase con anon key (público, sin auth)
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 const supabasePublic = createClient(supabaseUrl, supabaseAnonKey)
-
-const truckIcon = new L.Icon({
-  iconUrl: 'https://cdn-icons-png.flaticon.com/512/7504/7504060.png',
-  iconSize: [40, 40],
-  iconAnchor: [20, 20],
-  popupAnchor: [0, -20]
-})
 
 // Componente para centrar el mapa en el marcador
 function AutoCenter({ position }) {
@@ -63,7 +58,7 @@ export default function TrackingPublico() {
       // 3. Cargar datos del viaje
       const { data: viajeData } = await supabasePublic
         .from('viajes')
-        .select('id, origen, destino, estado, cliente, fecha_inicio')
+        .select('id, origen, destino, estado, cliente, fecha_inicio, vehiculo:vehiculo_id(patente, marca, modelo)')
         .eq('id', tokenData.viaje_id)
         .single()
 
@@ -259,7 +254,10 @@ export default function TrackingPublico() {
             {/* Posición actual */}
             <Marker
               position={[ultimaUbicacion.latitud, ultimaUbicacion.longitud]}
-              icon={truckIcon}
+              icon={crearTruckMarkerIcon({
+                patente: viaje?.vehiculo?.patente || 'Vehículo',
+                color: '#10b981'
+              })}
             />
 
             <AutoCenter position={[ultimaUbicacion.latitud, ultimaUbicacion.longitud]} />

@@ -5,15 +5,8 @@ import { useAuth } from '@/contexts/AuthContext'
 import L from 'leaflet'
 import { format } from 'date-fns'
 import { filtrarTrayectoriaReal } from '@/lib/geoUtils'
+import { crearTruckMarkerIcon } from '@/lib/markerIcons'
 import { abrirWhatsApp, generarLinkWhatsApp, generarMensajeTracking } from '@/services/whatsappService'
-
-// Custom marker icon for trucks
-const truckIcon = new L.Icon({
-  iconUrl: 'https://cdn-icons-png.flaticon.com/512/7504/7504060.png',
-  iconSize: [36, 36],
-  iconAnchor: [18, 18],
-  popupAnchor: [0, -18]
-})
 
 function MapFlyTo({ target }) {
   const map = useMap()
@@ -87,7 +80,7 @@ export default function MapaVisibilidad() {
         .from('viajes')
         .select(`
           *,
-          chofer:chofer_id(nombre, celular, dni),
+          chofer:chofer_id(nombre, dni, telefono_contacto),
           vehiculo:vehiculo_id(patente, marca, modelo),
           cliente_rel:cliente_id(nombre_empresa, nombre_responsable, celular)
         `)
@@ -341,7 +334,11 @@ export default function MapaVisibilidad() {
                     />
                     <Marker 
                       position={[ultimaUb.latitud, ultimaUb.longitud]}
-                      icon={truckIcon}
+                      icon={crearTruckMarkerIcon({
+                        patente: viaje.vehiculo?.patente || 'Vehículo',
+                        color: estadoConfig.color,
+                        isSelected
+                      })}
                       eventHandlers={{
                         click: () => seleccionarViaje(viaje)
                       }}

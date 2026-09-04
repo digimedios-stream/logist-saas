@@ -45,7 +45,7 @@ export default function GestionEntregas() {
           .from('viajes')
           .select(`
             *,
-            chofer:chofer_id(nombre, celular),
+            chofer:chofer_id(nombre, telefono_contacto),
             vehiculo:vehiculo_id(patente, marca, modelo),
             cliente_rel:cliente_id(id, nombre_empresa, nombre_responsable, celular),
             entregas(*)

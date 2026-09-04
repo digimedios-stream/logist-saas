@@ -4,18 +4,12 @@ import { createClient } from '@supabase/supabase-js'
 import { MapContainer, TileLayer, Marker, Polyline, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import { format } from 'date-fns'
+import { crearTruckMarkerIcon } from '@/lib/markerIcons'
 import 'leaflet/dist/leaflet.css'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 const supabasePublic = createClient(supabaseUrl, supabaseAnonKey)
-
-const truckIcon = new L.Icon({
-  iconUrl: 'https://cdn-icons-png.flaticon.com/512/7504/7504060.png',
-  iconSize: [36, 36],
-  iconAnchor: [18, 18],
-  popupAnchor: [0, -18]
-})
 
 // Auto-fit a todos los marcadores
 function FitAllBounds({ positions }) {
@@ -224,7 +218,10 @@ export default function MonitorFlota() {
                 />
                 <Marker
                   position={[ultima.latitud, ultima.longitud]}
-                  icon={truckIcon}
+                  icon={crearTruckMarkerIcon({
+                    patente: viaje.vehiculo?.patente || 'Vehículo',
+                    color
+                  })}
                 >
                   <Popup className="text-slate-900 font-sans">
                     <div className="p-1 min-w-[200px]">
