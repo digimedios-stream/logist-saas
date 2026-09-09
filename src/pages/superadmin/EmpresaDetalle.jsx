@@ -24,6 +24,7 @@ const MODULOS_CATALOGO = [
   { key: 'mecanicos',     icon: 'engineering',       label: 'Mecánicos',       desc: 'Registro de proveedores de mantenimiento.' },
   { key: 'adicionales',   icon: 'local_mall',        label: 'Adicionales',     desc: 'Conceptos adicionales y descuentos por turno.' },
   { key: 'lineas',        icon: 'route',             label: 'Líneas / Rutas',  desc: 'Configuración de líneas y rutas operativas.' },
+  { key: 'courier_fiscal',icon: 'warehouse',         label: 'Courier & Depósito Fiscal', desc: 'WMS aduanero, control de bultos, optimizador y asistente de IA.' },
   { key: 'logs',          icon: 'history',           label: 'Actividad',       desc: 'Registro de actividad de usuarios en el sistema.' },
 ]
 
@@ -80,11 +81,13 @@ export default function EmpresaDetalle() {
     try {
       if (activo) {
         // Desactivar: update a habilitado=false
-        await supabase
+        const { error } = await supabase
           .from('empresa_modulos')
           .update({ habilitado: false })
           .eq('empresa_id', id)
           .eq('modulo', modKey)
+
+        if (error) throw error
 
         setModulosActivos(prev => {
           const next = new Set(prev)
@@ -92,15 +95,43 @@ export default function EmpresaDetalle() {
           return next
         })
       } else {
-        // Activar: upsert
-        await supabase
+        // Activar: verificar si ya existe registro previo
+        const { data: existing, error: errSearch } = await supabase
           .from('empresa_modulos')
-          .upsert({ empresa_id: id, modulo: modKey, habilitado: true }, { onConflict: 'empresa_id,modulo' })
+          .select('id')
+          .eq('empresa_id', id)
+          .eq('modulo', modKey)
+          .maybeSingle()
+
+        if (errSearch) throw errSearch
+
+        if (existing) {
+          const { error: errUpdate } = await supabase
+            .from('empresa_modulos')
+            .update({ habilitado: true })
+            .eq('id', existing.id)
+
+          if (errUpdate) throw errUpdate
+        } else {
+          const { error: errInsert } = await supabase
+            .from('empresa_modulos')
+            .insert([{ empresa_id: id, modulo: modKey, habilitado: true }])
+
+          if (errInsert) {
+            // Intento con upsert
+            const { error: errUpsert } = await supabase
+              .from('empresa_modulos')
+              .upsert({ empresa_id: id, modulo: modKey, habilitado: true }, { onConflict: 'empresa_id,modulo' })
+
+            if (errUpsert) throw errUpsert
+          }
+        }
 
         setModulosActivos(prev => new Set([...prev, modKey]))
       }
     } catch (err) {
-      alert('Error: ' + err.message)
+      console.error('Error al cambiar módulo:', err)
+      alert('Error al guardar el cambio del módulo: ' + (err.message || JSON.stringify(err)))
     } finally {
       setToggling(null)
     }

@@ -28,6 +28,7 @@ export default function TrackingPublico() {
 
   const [estado, setEstado] = useState('loading') // loading | active | finished | expired | error
   const [viaje, setViaje] = useState(null)
+  const [paquete, setPaquete] = useState(null)
   const [ubicaciones, setUbicaciones] = useState([])
   const [ultimaUbicacion, setUltimaUbicacion] = useState(null)
 
@@ -37,7 +38,38 @@ export default function TrackingPublico() {
 
   async function verificarToken() {
     try {
-      // 1. Buscar el token
+      // 0. Si es un tracking code de Courier (ej: LOG-...)
+      const { data: paqData } = await supabasePublic
+        .from('courier_paquetes')
+        .select(`
+          *,
+          empresa:empresas(nombre, logo_url, color_marca),
+          manifiesto:manifiestos_aduaneros(numero_documento, tipo_documento, canal_aduanero, estado_fiscal)
+        `)
+        .ilike('tracking_code', token.trim())
+        .maybeSingle()
+
+      if (paqData) {
+        setPaquete(paqData)
+        setEstado('courier')
+
+        // Si tiene viaje_id, cargar ubicaciones del chofer
+        if (paqData.viaje_id) {
+          const { data: ubs } = await supabasePublic
+            .from('ubicaciones_viaje')
+            .select('latitud, longitud, timestamp')
+            .eq('viaje_id', paqData.viaje_id)
+            .order('timestamp', { ascending: true })
+
+          if (ubs && ubs.length > 0) {
+            setUbicaciones(ubs)
+            setUltimaUbicacion(ubs[ubs.length - 1])
+          }
+        }
+        return
+      }
+
+      // 1. Buscar el token estándar de viaje
       const { data: tokenData, error: tokenErr } = await supabasePublic
         .from('tracking_tokens')
         .select('viaje_id, activo, expires_at')
@@ -148,6 +180,122 @@ export default function TrackingPublico() {
         <div className="text-center space-y-4">
           <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto" />
           <p className="text-slate-400 text-sm">Cargando seguimiento...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // ── ESTADO COURIER / ADUANA ────────────────────────────────
+  if (estado === 'courier' && paquete) {
+    const etapas = [
+      { id: 'recibido_deposito', label: 'Arribo a Depósito Fiscal', desc: 'Ingreso al país y recepción de bulto', icon: 'warehouse' },
+      { id: 'en_aforo', label: 'Inspección Aduanera', desc: 'Aforo y verificación documental', icon: 'verified' },
+      { id: 'liberado_aduana', label: 'Liberado / Nacionalizado', desc: 'Despacho a plaza otorgado por Aduana', icon: 'task_alt' },
+      { id: 'en_reparto', label: 'En Reparto a Destino', desc: 'Asignado a vehículo de última milla', icon: 'local_shipping' },
+      { id: 'entregado', label: 'Entregado', desc: 'Recepción confirmada por destinatario', icon: 'check_circle' },
+    ]
+
+    const pasoIndex = {
+      recibido_deposito: 0,
+      almacenado: 0,
+      en_aforo: 1,
+      liberado_aduana: 2,
+      listo_despacho: 2,
+      asignado_viaje: 3,
+      en_reparto: 3,
+      entregado: 4,
+      retenido_aduana: 1
+    }[paquete.estado] ?? 0
+
+    return (
+      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center p-4 sm:p-6 md:p-10">
+        <div className="w-full max-w-2xl space-y-6">
+          {/* Header Empresa */}
+          <div className="flex items-center justify-between bg-slate-900/90 border border-slate-800 p-5 rounded-3xl shadow-2xl">
+            <div className="flex items-center gap-3">
+              {paquete.empresa?.logo_url ? (
+                <img src={paquete.empresa.logo_url} alt="Logo" className="w-10 h-10 object-contain rounded-xl" />
+              ) : (
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-black">
+                  <span className="material-symbols-outlined text-2xl">package_2</span>
+                </div>
+              )}
+              <div>
+                <h2 className="font-bold text-base text-white">{paquete.empresa?.nombre || 'Logist Courier'}</h2>
+                <span className="text-xs text-slate-400">Seguimiento Oficial de Carga & Aduana</span>
+              </div>
+            </div>
+            <span className="font-mono text-xs font-bold px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400">
+              {paquete.tracking_code}
+            </span>
+          </div>
+
+          {/* Tarjeta de Estado Principal */}
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-5">
+              <div>
+                <span className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Contenido del Bulto</span>
+                <h1 className="text-xl font-bold text-white mt-0.5">{paquete.descripcion_contenido}</h1>
+                <div className="text-xs text-slate-400 mt-1">
+                  Destinatario: <strong className="text-slate-200">{paquete.destinatario_nombre}</strong> | {paquete.destinatario_direccion}
+                </div>
+              </div>
+              <div className="text-right">
+                <span className="text-xs text-slate-500 uppercase font-semibold">Peso / Bulto</span>
+                <div className="text-lg font-black text-emerald-400">{paquete.peso_kg} kg</div>
+              </div>
+            </div>
+
+            {/* Línea de Tiempo de Aduana & Reparto */}
+            <div className="space-y-4">
+              <h3 className="text-xs uppercase font-bold text-slate-400 tracking-wider">Estado del Envío</h3>
+              <div className="space-y-4 relative before:absolute before:left-4 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-800">
+                {etapas.map((etapa, idx) => {
+                  const completado = idx <= pasoIndex
+                  const actual = idx === pasoIndex
+
+                  return (
+                    <div key={etapa.id} className="relative flex items-start gap-4 pl-1">
+                      <div
+                        className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold z-10 transition ${
+                          actual
+                            ? 'bg-emerald-500 text-slate-950 ring-4 ring-emerald-500/20'
+                            : completado
+                            ? 'bg-emerald-600/30 text-emerald-300 border border-emerald-500/50'
+                            : 'bg-slate-900 text-slate-600 border border-slate-800'
+                        }`}
+                      >
+                        <span className="material-symbols-outlined text-sm">{etapa.icon}</span>
+                      </div>
+                      <div className="flex-1">
+                        <div className={`text-sm font-bold ${actual ? 'text-emerald-400' : completado ? 'text-white' : 'text-slate-500'}`}>
+                          {etapa.label}
+                        </div>
+                        <div className="text-xs text-slate-400">{etapa.desc}</div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Info Manifiesto / Aduana si existe */}
+            {paquete.manifiesto && (
+              <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800/80 flex items-center justify-between text-xs">
+                <div>
+                  <span className="text-slate-500 block text-[10px] uppercase font-bold">Doc. Aduanero Asociado</span>
+                  <span className="font-mono text-slate-200 font-bold">{paquete.manifiesto.tipo_documento}: {paquete.manifiesto.numero_documento}</span>
+                </div>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border uppercase ${
+                  paquete.manifiesto.canal_aduanero === 'verde'
+                    ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+                    : 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                }`}>
+                  Canal {paquete.manifiesto.canal_aduanero}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     )

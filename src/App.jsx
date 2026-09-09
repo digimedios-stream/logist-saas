@@ -41,6 +41,12 @@ import Finanzas from '@/pages/admin/Finanzas'
 import PresupuestoForm from '@/pages/admin/PresupuestoForm'
 import GestionEntregas from '@/pages/admin/GestionEntregas'
 
+// Módulo Courier & Depósito Fiscal
+import DepositoFiscal from '@/pages/admin/courier/DepositoFiscal'
+import GestionPaquetes from '@/pages/admin/courier/GestionPaquetes'
+import ManifiestosAduana from '@/pages/admin/courier/ManifiestosAduana'
+import OptimizadorRutas from '@/pages/admin/courier/OptimizadorRutas'
+
 // Chofer Pages
 import ChoferDashboard from '@/pages/chofer/Dashboard'
 import ChoferTurno from '@/pages/chofer/Turno'
@@ -212,6 +218,12 @@ export default function App() {
           <Route path="liquidaciones" element={<ModuleRoute modulo="liquidaciones"><Liquidaciones /></ModuleRoute>} />
           <Route path="documentos"    element={<ModuleRoute modulo="documentos"><Documentos /></ModuleRoute>} />
           <Route path="novedades"     element={<ModuleRoute modulo="novedades"><AdminNovedades /></ModuleRoute>} />
+
+          {/* Módulo Courier & Depósito Fiscal */}
+          <Route path="deposito-fiscal"       element={<ModuleRoute modulo="courier_fiscal"><DepositoFiscal /></ModuleRoute>} />
+          <Route path="courier-paquetes"      element={<ModuleRoute modulo="courier_fiscal"><GestionPaquetes /></ModuleRoute>} />
+          <Route path="manifiestos-aduaneros" element={<ModuleRoute modulo="courier_fiscal"><ManifiestosAduana /></ModuleRoute>} />
+          <Route path="optimizador-courier"   element={<ModuleRoute modulo="courier_fiscal"><OptimizadorRutas /></ModuleRoute>} />
         </Route>
 
         {/* ── Rutas Chofer ────────────────────────────────────── */}

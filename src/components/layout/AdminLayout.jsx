@@ -38,6 +38,18 @@ const ALL_NAV_ITEMS = [
       { to: '/admin/documentos',     icon: 'description',         label: 'Documentos',      modulo: 'documentos' },
     ]
   },
+  {
+    label: 'Courier & Depósito Fiscal',
+    icon: 'warehouse',
+    type: 'group',
+    modulo: 'courier_fiscal',
+    items: [
+      { to: '/admin/deposito-fiscal',      icon: 'warehouse',           label: 'Depósito Fiscal / WMS' },
+      { to: '/admin/courier-paquetes',     icon: 'package_2',           label: 'Paquetería & Bultos' },
+      { to: '/admin/manifiestos-aduaneros',icon: 'description',         label: 'Manifiestos & Aduana' },
+      { to: '/admin/optimizador-courier',  icon: 'alt_route',           label: 'Optimizador de Rutas' },
+    ]
+  },
   { to: '/admin/finanzas',       icon: 'account_balance',     label: 'Finanzas' },
   { to: '/admin/liquidaciones',  icon: 'payments',            label: 'Liquidaciones',   modulo: 'liquidaciones' },
   { to: '/admin/usuarios',       icon: 'manage_accounts',     label: 'Usuarios' },
@@ -78,6 +90,7 @@ export default function AdminLayout() {
   // Filtrar ítems según módulos activos de la empresa
   const NAV_ITEMS = ALL_NAV_ITEMS.map(item => {
     if (item.type === 'group') {
+      if (item.modulo && !tieneModulo(item.modulo)) return null
       const filteredItems = item.items.filter(subItem => {
         if (subItem.modulo) return tieneModulo(subItem.modulo)
         return true
