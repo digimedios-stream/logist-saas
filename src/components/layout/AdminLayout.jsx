@@ -65,7 +65,7 @@ const MOBILE_NAV = [
 ]
 
 export default function AdminLayout() {
-  const { user, logout, adminNombre, choferData, tieneModulo, empresaData, isSuperAdmin } = useAuth()
+  const { user, logout, adminNombre, choferData, tieneModulo, empresaData, isSuperAdmin, isImpersonating, salirImpersonacion } = useAuth()
   const { tema, modoClaro, toggleTemaClaroOscuro } = useTheme()
   const navigate = useNavigate()
   const location = useLocation()
@@ -337,6 +337,29 @@ export default function AdminLayout() {
 
       {/* Main content */}
       <main className={`flex-1 pt-20 pb-8 px-4 md:px-8 transition-all duration-300 ${sidebarOpen ? 'md:ml-64' : 'md:ml-20'}`}>
+        {isImpersonating && (
+          <div className="mb-6 p-3.5 rounded-2xl bg-gradient-to-r from-purple-950/90 via-slate-900 to-indigo-950/90 border border-purple-500/40 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in duration-200">
+            <div className="flex items-center gap-2.5 text-xs text-purple-200">
+              <div className="w-7 h-7 rounded-lg bg-purple-500/20 text-purple-300 flex items-center justify-center font-bold">
+                <span className="material-symbols-outlined text-base">visibility</span>
+              </div>
+              <div>
+                <span className="font-bold text-white uppercase tracking-wider text-[10px] block">Modo SuperAdmin Activo</span>
+                <span>Estás gestionando el sistema de <strong>{empresaData?.nombre || 'Empresa'}</strong></span>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                salirImpersonacion()
+                navigate('/superadmin/empresas')
+              }}
+              className="flex items-center justify-center gap-1.5 px-3.5 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-bold text-xs transition shadow-lg shadow-purple-950"
+            >
+              <span className="material-symbols-outlined text-sm">arrow_back</span>
+              Volver al Panel SuperAdmin
+            </button>
+          </div>
+        )}
         <Outlet />
       </main>
 

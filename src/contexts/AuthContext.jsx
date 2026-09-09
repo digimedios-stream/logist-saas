@@ -78,8 +78,20 @@ export function AuthProvider({ children }) {
       setUserRole(roleData.rol)
       setUserNombre(roleData.nombre || 'Administrador')
 
-      // 2. Superadmin: no tiene empresa, no necesita módulos
+      // 2. Superadmin: puede suplantar empresa si está guardado en sesión
       if (roleData.rol === 'superadmin') {
+        const storedImpersonatedId = sessionStorage.getItem('logist_impersonating_empresa_id')
+        if (storedImpersonatedId) {
+          const [{ data: empresa }, { data: modulos }] = await Promise.all([
+            supabase.from('empresas').select('*').eq('id', storedImpersonatedId).maybeSingle(),
+            supabase.from('empresa_modulos').select('modulo').eq('empresa_id', storedImpersonatedId).eq('habilitado', true)
+          ])
+          if (empresa) {
+            setEmpresaData(empresa)
+            setModulosActivos(new Set(modulos?.map(m => m.modulo) || []))
+            setIsImpersonating(true)
+          }
+        }
         setLoading(false)
         return
       }
@@ -132,6 +144,37 @@ export function AuthProvider({ children }) {
     }
   }
 
+  async function suplantarEmpresa(empresaOId) {
+    const empresaId = typeof empresaOId === 'string' ? empresaOId : empresaOId.id
+    setLoading(true)
+    try {
+      const [{ data: empresa }, { data: modulos }] = await Promise.all([
+        supabase.from('empresas').select('*').eq('id', empresaId).single(),
+        supabase.from('empresa_modulos').select('modulo').eq('empresa_id', empresaId).eq('habilitado', true)
+      ])
+      if (empresa) {
+        setEmpresaData(empresa)
+        setModulosActivos(new Set(modulos?.map(m => m.modulo) || []))
+        setIsImpersonating(true)
+        sessionStorage.setItem('logist_impersonating_empresa_id', empresaId)
+        return true
+      }
+    } catch (err) {
+      console.error('Error suplantando empresa:', err)
+      alert('Error al acceder a la empresa: ' + err.message)
+      return false
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  function salirImpersonacion() {
+    sessionStorage.removeItem('logist_impersonating_empresa_id')
+    setIsImpersonating(false)
+    setEmpresaData(null)
+    setModulosActivos(new Set())
+  }
+
   async function login(email, password) {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) throw error
@@ -139,6 +182,7 @@ export function AuthProvider({ children }) {
   }
 
   async function logout() {
+    sessionStorage.removeItem('logist_impersonating_empresa_id')
     const { error } = await supabase.auth.signOut()
     if (error) throw error
     resetearEstado()
@@ -154,18 +198,22 @@ export function AuthProvider({ children }) {
     loading,
     login,
     logout,
+    // Impersonación SuperAdmin
+    isImpersonating,
+    suplantarEmpresa,
+    salirImpersonacion,
     // Helpers de rol
     isSuperAdmin: userRole === 'superadmin',
     isAdmin: userRole === 'admin',
     isChofer: userRole === 'chofer',
     // Helper de módulos: tieneModulo('multas') → true/false
-    tieneModulo: (mod) => modulosActivos.has(mod),
+    tieneModulo: (mod) => isImpersonating ? modulosActivos.has(mod) : (userRole === 'superadmin' ? true : modulosActivos.has(mod)),
     // Nombre del usuario autenticado
-    adminNombre: userNombre,
+    adminNombre: isImpersonating ? `${empresaData?.nombre || 'Empresa'} (SuperAdmin)` : userNombre,
     esTercero: vehiculoAsignado?.tipo_propietario === 'tercero',
     propietarioNombre: vehiculoAsignado?.tipo_propietario === 'tercero'
       ? vehiculoAsignado.propietario_nombre
-      : null, // Se resuelve desde empresaData.nombre en los layouts
+      : null,
     recargarDatos: () => user && cargarDatosUsuario(user.id),
   }
 

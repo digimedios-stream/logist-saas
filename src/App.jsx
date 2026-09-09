@@ -79,14 +79,16 @@ function LoadingScreen() {
 
 // ── Protector de ruta autenticada ──────────────────────────────────
 function PrivateRoute({ children, requiredRole }) {
-  const { user, userRole, loading } = useAuth()
+  const { user, userRole, isSuperAdmin, loading } = useAuth()
 
   if (loading) return <LoadingScreen />
   if (!user) return <Navigate to="/login" replace />
 
   if (requiredRole && userRole !== requiredRole) {
-    // Admins pueden entrar a rutas de chofer
-    if (userRole === 'admin' && requiredRole === 'chofer') {
+    // SuperAdmin puede acceder a cualquier ruta (soporte, administración, chofer)
+    if (isSuperAdmin) {
+      // Permitido
+    } else if (userRole === 'admin' && requiredRole === 'chofer') {
       // Permitido
     } else if (userRole === null) {
       return (

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/contexts/AuthContext'
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
 
@@ -254,7 +255,7 @@ export default function EmpresaDetalle() {
             <h2 className="text-2xl font-black text-white tracking-tight">{empresa.nombre}</h2>
             <span className="text-xs text-slate-500 font-mono bg-slate-800 px-2 py-1 rounded">{empresa.slug}</span>
           </div>
-          <div className="flex items-center gap-4 ml-13 mt-2">
+          <div className="flex flex-wrap items-center gap-3 ml-13 mt-2">
             <span className="text-xs uppercase font-black text-slate-500 bg-slate-800 px-2 py-1 rounded border border-slate-700">
               {empresa.plan}
             </span>
@@ -267,7 +268,17 @@ export default function EmpresaDetalle() {
               }`}
             >
               <span className={`w-2 h-2 rounded-full ${empresa.activa ? 'bg-emerald-500' : 'bg-red-500'}`} />
-              {empresa.activa ? 'Activa — click para desactivar' : 'Inactiva — click para activar'}
+              {empresa.activa ? 'Activa' : 'Inactiva'}
+            </button>
+            <button
+              onClick={async () => {
+                const ok = await suplantarEmpresa(empresa)
+                if (ok) navigate('/admin')
+              }}
+              className="flex items-center gap-1.5 text-xs font-bold text-emerald-300 bg-emerald-600/20 hover:bg-emerald-600/35 border border-emerald-500/40 px-3.5 py-1.5 rounded-xl transition-all shadow-sm"
+            >
+              <span className="material-symbols-outlined text-sm">login</span>
+              Ingresar al Panel de esta Empresa
             </button>
           </div>
         </div>

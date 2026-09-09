@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/contexts/AuthContext'
 
 const PLAN_OPTS = ['basico', 'profesional', 'enterprise']
 
@@ -14,6 +15,8 @@ const initialForm = {
 }
 
 export default function GestionEmpresas() {
+  const navigate = useNavigate()
+  const { suplantarEmpresa } = useAuth()
   const [empresas, setEmpresas] = useState([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -144,13 +147,26 @@ export default function GestionEmpresas() {
                     {new Date(e.created_at).toLocaleDateString('es-AR')}
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <Link
-                      to={`/superadmin/empresas/${e.id}`}
-                      className="inline-flex items-center gap-1 px-3 py-1.5 bg-purple-600/10 hover:bg-purple-600/20 text-purple-300 border border-purple-500/20 rounded-lg text-xs font-bold transition-all"
-                    >
-                      <span className="material-symbols-outlined text-sm">tune</span>
-                      Módulos
-                    </Link>
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        onClick={async () => {
+                          const ok = await suplantarEmpresa(e)
+                          if (ok) navigate('/admin')
+                        }}
+                        title="Ingresar al panel de esta empresa como SuperAdmin"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600/15 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 rounded-lg text-xs font-bold transition-all shadow-sm"
+                      >
+                        <span className="material-symbols-outlined text-sm">login</span>
+                        Ingresar
+                      </button>
+                      <Link
+                        to={`/superadmin/empresas/${e.id}`}
+                        className="inline-flex items-center gap-1 px-3 py-1.5 bg-purple-600/10 hover:bg-purple-600/20 text-purple-300 border border-purple-500/20 rounded-lg text-xs font-bold transition-all"
+                      >
+                        <span className="material-symbols-outlined text-sm">tune</span>
+                        Módulos
+                      </Link>
+                    </div>
                   </td>
                 </tr>
               ))}
