@@ -13,6 +13,7 @@ export function AuthProvider({ children }) {
   const [vehiculoAsignado, setVehiculoAsignado] = useState(null)
   const [empresaData, setEmpresaData] = useState(null)   // { id, nombre, logo_url, color_marca }
   const [modulosActivos, setModulosActivos] = useState(new Set())
+  const [isImpersonating, setIsImpersonating] = useState(false)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -44,6 +45,7 @@ export function AuthProvider({ children }) {
     setVehiculoAsignado(null)
     setEmpresaData(null)
     setModulosActivos(new Set())
+    setIsImpersonating(false)
     setLoading(false)
   }
 
