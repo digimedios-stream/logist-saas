@@ -38,17 +38,29 @@ export function calcularEstadia(fechaIngreso, diasLibres = 5, costoDiario = 0) {
 // ── DEPÓSITOS FISCALES ────────────────────────────────────────────────────────
 
 export async function getDepositosFiscales(empresaId) {
-  const { data, error } = await supabase
-    .from('depositos_fiscales')
-    .select(`
-      *,
-      posiciones:deposito_posiciones(count)
-    `)
-    .eq('empresa_id', empresaId)
-    .order('created_at', { ascending: false })
+  try {
+    let query = supabase
+      .from('depositos_fiscales')
+      .select(`
+        *,
+        posiciones:deposito_posiciones(count)
+      `)
+      .order('created_at', { ascending: false })
 
-  if (error) throw error
-  return data || []
+    if (empresaId) {
+      query = query.eq('empresa_id', empresaId)
+    }
+
+    const { data, error } = await query
+    if (error) {
+      console.warn('getDepositosFiscales info:', error)
+      return []
+    }
+    return data || []
+  } catch (err) {
+    console.warn('getDepositosFiscales catch:', err)
+    return []
+  }
 }
 
 export async function createDepositoFiscal(deposito) {
@@ -77,14 +89,21 @@ export async function updateDepositoFiscal(id, updates) {
 // ── POSICIONES / RACKS DEL DEPÓSITO ──────────────────────────────────────────
 
 export async function getPosicionesDeposito(depositoId) {
-  const { data, error } = await supabase
-    .from('deposito_posiciones')
-    .select('*')
-    .eq('deposito_id', depositoId)
-    .order('codigo', { ascending: true })
+  try {
+    const { data, error } = await supabase
+      .from('deposito_posiciones')
+      .select('*')
+      .eq('deposito_id', depositoId)
+      .order('codigo', { ascending: true })
 
-  if (error) throw error
-  return data || []
+    if (error) {
+      console.warn('getPosicionesDeposito info:', error)
+      return []
+    }
+    return data || []
+  } catch (err) {
+    return []
+  }
 }
 
 export async function createPosicion(posicion) {
@@ -111,19 +130,31 @@ export async function batchCreatePosiciones(posiciones) {
 // ── MANIFIESTOS ADUANEROS (AWB / BL / CRT) ───────────────────────────────────
 
 export async function getManifiestosAduaneros(empresaId) {
-  const { data, error } = await supabase
-    .from('manifiestos_aduaneros')
-    .select(`
-      *,
-      cliente:clientes(id, nombre_empresa, nombre_responsable, cuit),
-      deposito:depositos_fiscales(id, nombre, dias_libres_almacenaje, costo_diario_excedente),
-      paquetes:courier_paquetes(id, tracking_code, estado, peso_kg, valor_declarado_usd)
-    `)
-    .eq('empresa_id', empresaId)
-    .order('created_at', { ascending: false })
+  try {
+    let query = supabase
+      .from('manifiestos_aduaneros')
+      .select(`
+        *,
+        cliente:clientes(id, nombre_empresa, nombre_responsable, cuit),
+        deposito:depositos_fiscales(id, nombre, dias_libres_almacenaje, costo_diario_excedente),
+        paquetes:courier_paquetes(id, tracking_code, estado, peso_kg, valor_declarado_usd)
+      `)
+      .order('created_at', { ascending: false })
 
-  if (error) throw error
-  return data || []
+    if (empresaId) {
+      query = query.eq('empresa_id', empresaId)
+    }
+
+    const { data, error } = await query
+    if (error) {
+      console.warn('getManifiestosAduaneros info:', error)
+      return []
+    }
+    return data || []
+  } catch (err) {
+    console.warn('getManifiestosAduaneros catch:', err)
+    return []
+  }
 }
 
 export async function createManifiestoAduanero(manifiesto) {
@@ -152,29 +183,40 @@ export async function updateManifiestoAduanero(id, updates) {
 // ── COURIER PAQUETES ─────────────────────────────────────────────────────────
 
 export async function getCourierPaquetes(empresaId, filtros = {}) {
-  let query = supabase
-    .from('courier_paquetes')
-    .select(`
-      *,
-      cliente:clientes(id, nombre_empresa, nombre_responsable, celular),
-      posicion:deposito_posiciones(id, codigo, sector, rack),
-      manifiesto:manifiestos_aduaneros(id, numero_documento, tipo_documento, canal_aduanero, estado_fiscal),
-      viaje:viajes(id, origen, destino, chofer:choferes(nombre), vehiculo:vehiculos(patente, marca, modelo))
-    `)
-    .eq('empresa_id', empresaId)
-    .order('created_at', { ascending: false })
+  try {
+    let query = supabase
+      .from('courier_paquetes')
+      .select(`
+        *,
+        cliente:clientes(id, nombre_empresa, nombre_responsable, celular),
+        posicion:deposito_posiciones(id, codigo, sector, rack),
+        manifiesto:manifiestos_aduaneros(id, numero_documento, tipo_documento, canal_aduanero, estado_fiscal),
+        viaje:viajes(id, origen, destino, chofer:choferes(nombre), vehiculo:vehiculos(patente, marca, modelo))
+      `)
+      .order('created_at', { ascending: false })
 
-  if (filtros.estado && filtros.estado !== 'todos') {
-    query = query.eq('estado', filtros.estado)
+    if (empresaId) {
+      query = query.eq('empresa_id', empresaId)
+    }
+
+    if (filtros.estado && filtros.estado !== 'todos') {
+      query = query.eq('estado', filtros.estado)
+    }
+
+    if (filtros.clienteId) {
+      query = query.eq('cliente_id', filtros.clienteId)
+    }
+
+    const { data, error } = await query
+    if (error) {
+      console.warn('getCourierPaquetes info:', error)
+      return []
+    }
+    return data || []
+  } catch (err) {
+    console.warn('getCourierPaquetes catch:', err)
+    return []
   }
-
-  if (filtros.clienteId) {
-    query = query.eq('cliente_id', filtros.clienteId)
-  }
-
-  const { data, error } = await query
-  if (error) throw error
-  return data || []
 }
 
 export async function createCourierPaquete(paquete) {

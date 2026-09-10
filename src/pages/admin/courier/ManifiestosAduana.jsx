@@ -29,6 +29,7 @@ export default function ManifiestosAduana() {
   const [analizandoIA, setAnalizandoIA] = useState(false)
   const [resultadoIA, setResultadoIA] = useState(null)
   const [clienteSeleccionadoIA, setClienteSeleccionadoIA] = useState('')
+  const [archivoSeleccionado, setArchivoSeleccionado] = useState(null)
 
   // Formulario manual
   const [formData, setFormData] = useState({
