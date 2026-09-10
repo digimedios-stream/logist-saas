@@ -81,7 +81,9 @@ export default function AdminLayout() {
   
   // Estado para controlar qué menús agrupados están abiertos
   const [openGroups, setOpenGroups] = useState(() => {
-    const initial = {}
+    const initial = {
+      'Terminal & Comex': true // Siempre desplegado si el módulo está activo
+    }
     ALL_NAV_ITEMS.forEach(item => {
       if (item.type === 'group' && item.items.some(sub => location.pathname.startsWith(sub.to))) {
         initial[item.label] = true
