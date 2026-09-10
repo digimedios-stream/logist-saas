@@ -6,11 +6,20 @@ import { useAuth } from '@/contexts/AuthContext'
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
 
 const ROL_COLORS = {
-  admin:  'text-blue-400 bg-blue-500/10 border-blue-500/30',
-  chofer: 'text-amber-400 bg-amber-500/10 border-amber-500/30',
+  admin:    'text-blue-400 bg-blue-500/10 border-blue-500/30',
+  operador: 'text-cyan-400 bg-cyan-500/10 border-cyan-500/30',
+  chofer:   'text-amber-400 bg-amber-500/10 border-amber-500/30',
+  cliente:  'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
 }
 
-const USER_FORM_INITIAL = { id: '', email: '', password: '', nombre: '', rol: 'chofer', chofer_id: '' }
+const ROLES_CATALOGO = [
+  { id: 'admin',    label: 'Admin',    icon: 'shield',        desc: 'Panel de Control Web & Backoffice', color: 'blue' },
+  { id: 'operador', label: 'Operador', icon: 'anchor',        desc: 'APK Campo: Plazoleta, Balanza, OTs, Tally', color: 'cyan' },
+  { id: 'chofer',   label: 'Chofer',   icon: 'local_shipping', desc: 'APK Móvil Chofer / Rutas', color: 'amber' },
+  { id: 'cliente',  label: 'Cliente',  icon: 'public',        desc: 'Portal Web de Seguimiento Impo/Expo', color: 'emerald' },
+]
+
+const USER_FORM_INITIAL = { id: '', email: '', password: '', nombre: '', rol: 'operador', chofer_id: '' }
 
 // Catálogo de todos los módulos disponibles en la plataforma
 const MODULOS_CATALOGO = [
@@ -504,23 +513,36 @@ export default function EmpresaDetalle() {
               )}
               <div>
                 <label className="text-[10px] uppercase font-black text-slate-500 mb-1.5 block">Rol *</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {['admin', 'chofer'].map(r => (
-                    <button
-                      key={r}
-                      type="button"
-                      onClick={() => setUserForm(f => ({ ...f, rol: r }))}
-                      className={`py-3 px-4 rounded-xl border text-sm font-bold uppercase tracking-wide transition-all ${
-                        userForm.rol === r
-                          ? r === 'admin'
-                            ? 'bg-blue-500/20 border-blue-500/40 text-blue-300'
-                            : 'bg-amber-500/20 border-amber-500/40 text-amber-300'
-                          : 'bg-slate-800 border-slate-700 text-slate-500 hover:border-slate-600'
-                      }`}
-                    >
-                      {r === 'admin' ? '🛡 Admin' : '🚛 Chofer'}
-                    </button>
-                  ))}
+                <div className="grid grid-cols-2 gap-2.5">
+                  {ROLES_CATALOGO.map(r => {
+                    const isSelected = userForm.rol === r.id
+                    return (
+                      <button
+                        key={r.id}
+                        type="button"
+                        onClick={() => setUserForm(f => ({ ...f, rol: r.id }))}
+                        className={`p-3 rounded-xl border text-left transition-all flex flex-col justify-between ${
+                          isSelected
+                            ? r.id === 'admin'
+                              ? 'bg-blue-500/20 border-blue-500/50 text-blue-300 ring-1 ring-blue-500/40'
+                              : r.id === 'operador'
+                              ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-300 ring-1 ring-cyan-500/40'
+                              : r.id === 'chofer'
+                              ? 'bg-amber-500/20 border-amber-500/50 text-amber-300 ring-1 ring-amber-500/40'
+                              : 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300 ring-1 ring-emerald-500/40'
+                            : 'bg-slate-800/80 border-slate-700 text-slate-400 hover:border-slate-600 hover:text-slate-300'
+                        }`}
+                      >
+                        <div className="flex items-center gap-1.5 font-bold text-xs uppercase tracking-wide">
+                          <span className="material-symbols-outlined text-sm">{r.icon}</span>
+                          {r.label}
+                        </div>
+                        <span className="text-[10px] text-slate-400 font-normal leading-tight mt-1 line-clamp-2">
+                          {r.desc}
+                        </span>
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
               {(userForm.rol === 'chofer' || userForm.rol === 'admin') && (
