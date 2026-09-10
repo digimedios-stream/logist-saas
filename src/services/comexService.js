@@ -397,7 +397,8 @@ export async function analizarDocumentoComexIA(archivoOTexto, tipoDoc = 'BL / Bi
       mimeType = fileConverted.mimeType
     }
 
-    let res = await supabase.functions.invoke('gemini-ai', {
+    // Probar primero 'Gemini' y luego 'gemini-ai'
+    let res = await supabase.functions.invoke('Gemini', {
       body: {
         action: 'analizar-documento',
         base64Data,
@@ -405,6 +406,17 @@ export async function analizarDocumentoComexIA(archivoOTexto, tipoDoc = 'BL / Bi
         tipoDoc
       }
     })
+
+    if (res.error) {
+      res = await supabase.functions.invoke('gemini-ai', {
+        body: {
+          action: 'analizar-documento',
+          base64Data,
+          mimeType,
+          tipoDoc
+        }
+      })
+    }
 
     if (!res.error && res.data?.data) {
       return res.data.data
@@ -468,14 +480,25 @@ export async function analizarDocumentoComexIA(archivoOTexto, tipoDoc = 'BL / Bi
 }
 
 export async function consultarCopilotoComexIA(pregunta, contexto = {}) {
+  // 1. Intentar invocar Edge Function de Supabase
   try {
-    let res = await supabase.functions.invoke('gemini-ai', {
+    let res = await supabase.functions.invoke('Gemini', {
       body: {
         action: 'consultar-copiloto',
         pregunta,
         contextoOperativo: contexto
       }
     })
+
+    if (res.error) {
+      res = await supabase.functions.invoke('gemini-ai', {
+        body: {
+          action: 'consultar-copiloto',
+          pregunta,
+          contextoOperativo: contexto
+        }
+      })
+    }
 
     if (!res.error && res.data?.respuesta) {
       return {
@@ -484,26 +507,98 @@ export async function consultarCopilotoComexIA(pregunta, contexto = {}) {
       }
     }
   } catch (err) {
-    console.warn('Error copiloto Comex, usando fallback:', err)
+    console.warn('Error copiloto Comex Edge Function, probando siguiente capa:', err)
   }
 
-  // Fallback heurístico
-  await new Promise(resolve => setTimeout(resolve, 800))
-  const q = pregunta.toLowerCase()
-  if (q.includes('vacio') || q.includes('detention') || q.includes('dias libres') || q.includes('vence')) {
+  // 2. Intentar llamada directa a API de Gemini si está configurada en VITE_GEMINI_API_KEY
+  const directApiKey = import.meta.env?.VITE_GEMINI_API_KEY
+  if (directApiKey) {
+    try {
+      const modelName = import.meta.env?.VITE_GEMINI_MODEL || 'gemini-2.5-flash'
+      const cleanModel = modelName.replace(/^models\//, '')
+      const geminiRes = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${cleanModel}:generateContent?key=${directApiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            system_instruction: {
+              parts: [
+                {
+                  text: `Eres el Asistente Copilot Oficial de Comercio Exterior, Terminal Portuaria y Depósito Fiscal de la plataforma 'Logist'.
+Eres un especialista en operativa portuaria (TEUs, Stacking en plazoleta, pesaje en balanza/destare, Órdenes de Trabajo OT, Tally/Pretally de desconsolidado, control de días libres/detention de navieras y canal aduanero Malvina).
+Responde de forma concisa, profesional, ejecutiva y en español a las consultas del operador o administrador.
+Utiliza formato Markdown (negritas, viñetas, emojis logísticos marítimos 🚢 ⚓ 📦 🏗️).`
+                }
+              ]
+            },
+            contents: [
+              {
+                role: 'user',
+                parts: [
+                  {
+                    text: `Contexto Operativo Actual de la Terminal:\n${JSON.stringify(contexto, null, 2)}\n\nPregunta del Administrador/Operador: "${pregunta}"`
+                  }
+                ]
+              }
+            ],
+            generationConfig: {
+              temperature: 0.3,
+              maxOutputTokens: 600
+            }
+          })
+        }
+      )
+
+      if (geminiRes.ok) {
+        const geminiData = await geminiRes.json()
+        const respuestaTexto = geminiData.candidates?.[0]?.content?.parts?.[0]?.text
+        if (respuestaTexto) {
+          return {
+            tipo: 'gemini-directo',
+            respuesta: respuestaTexto
+          }
+        }
+      }
+    } catch (apiErr) {
+      console.warn('Error en llamada directa a Gemini API:', apiErr)
+    }
+  }
+
+  // 3. Motor Inteligente Heurístico Local con normalización de caracteres
+  await new Promise(resolve => setTimeout(resolve, 600))
+  const cleanQ = pregunta.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+
+  if (cleanQ.includes('vacio') || cleanQ.includes('detention') || cleanQ.includes('dias libres') || cleanQ.includes('vence')) {
     return {
       tipo: 'alerta',
-      respuesta: `⚠️ **Monitoreo de Días Libres:** Se recomienda revisar los contenedores vacíos con fecha límite próxima para evitar cobros de *detention fees* de navieras. Hay OTs de devolución programables en 1 clic.`
+      respuesta: `🚢 **Estrategia para Contenedores Vacíos en Plazoleta & Bloque A:**\n\n1. **Distribución por Naviera:** Apilar los vacíos en el **Sector Vacíos / Bloque A** segregados por naviera (MSC, Maersk, Hapag-Lloyd) hasta 4 niveles de altura para maximizar el factor de estiba.\n2. **Rotación FIFO (First-In, First-Out):** Ubicar en los niveles superiores y bahías frontales aquellos contenedores con fecha de *detention* más próxima a vencer.\n3. **Generación de OTs de Devolución:** Desde la sección **Devolución de Vacíos**, puedes emitir las órdenes de transporte con 1 clic para evitar sobreestadías y recargos navieros.`
     }
   }
-  if (q.includes('plazoleta') || q.includes('stacking') || q.includes('ocupacion') || q.includes('teus')) {
+
+  if (cleanQ.includes('plazoleta') || cleanQ.includes('stacking') || cleanQ.includes('ocupacion') || cleanQ.includes('teus') || cleanQ.includes('bloque') || cleanQ.includes('organizar') || cleanQ.includes('espacio')) {
     return {
       tipo: 'optimizacion',
-      respuesta: `🏗️ **Plazoleta & Stacking:** Se recomienda apilar los 40' HC en Bloque A niveles 1 a 3 para optimizar los ciclos de grúa reach stacker.`
+      respuesta: `🏗️ **Optimización de Plazoleta & Stacking en Bloque A:**\n\n- **Bahías 1 a 4 (Bloque A):** Ubicar contenedores vacíos agrupados por tamaño (20' y 40' HC separados) para evitar remociones innecesarias de la Reach Stacker.\n- **Distribución por Peso y Estado:** Reservar niveles 1 y 2 para unidades con carga pesada y niveles 3 y 4 exclusivamente para unidades vacías.\n- **Reefers:** Direccionar siempre al **Bloque Reefer** para asegurar conexión de tomas eléctricas fijas y monitoreo de temperatura.`
     }
   }
+
+  if (cleanQ.includes('balanza') || cleanQ.includes('pesaje') || cleanQ.includes('tara') || cleanQ.includes('bruto') || cleanQ.includes('neto') || cleanQ.includes('ticket')) {
+    return {
+      tipo: 'balanza',
+      respuesta: `⚖️ **Procedimiento de Balanza & Pesaje Fiscal:**\n\n- Todo camión debe registrar su **Pesada 1 (Bruto)** al ingresar por Gate IN.\n- Tras la descarga o estiba en plazoleta, se realiza la **Pesada 2 (Tara)** en Gate OUT para emitir el **Ticket Fiscal** con el peso neto exacto certificado.`
+    }
+  }
+
+  if (cleanQ.includes('tally') || cleanQ.includes('desconsolid') || cleanQ.includes('sobrante') || cleanQ.includes('faltante') || cleanQ.includes('averia')) {
+    return {
+      tipo: 'tally',
+      respuesta: `📋 **Control de Tally & Desconsolidado:**\n\n- El apuntador de campo debe cotejar bulto por bulto contra el Manifiesto / Packing List.\n- En caso de bultos rotos o sellos violentados, se debe generar un acta de avería inmediata y notificar al vista de aduana.`
+    }
+  }
+
   return {
     tipo: 'general',
-    respuesta: `🚢 **Copilot Comex:** Sistema operativo conectado. Puedes consultarme sobre balanza, OTs de bajada a piso, Tally o vencimientos de vacíos.`
+    respuesta: `⚓ **Copilot Portuario & Comex:** Sistema operativo conectado y monitoreando la terminal.\nPuedes consultarme sobre optimización de apilado en plazoleta, destare en balanza, OTs de bajada a piso, Tally o prevención de sobreestadías de navieras.`
   }
 }
