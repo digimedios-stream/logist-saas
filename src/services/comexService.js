@@ -576,6 +576,13 @@ Utiliza formato Markdown (negritas, viñetas, emojis logísticos marítimos 🚢
     }
   }
 
+  if (cleanQ.includes('rojo') || cleanQ.includes('naranja') || cleanQ.includes('verde') || cleanQ.includes('canal') || cleanQ.includes('aduana') || cleanQ.includes('arca') || cleanQ.includes('afip') || cleanQ.includes('inspeccion') || cleanQ.includes('verificacion') || cleanQ.includes('vista')) {
+    return {
+      tipo: 'aduanas',
+      respuesta: `🔴 **Protocolo Operativo para Contenedores en CANAL ROJO (Aduana / Depósito Fiscal):**\n\n1. **Generación de OT de Bajada a Piso:** Emitir inmediatamente una Orden de Trabajo desde el módulo **Órdenes de Trabajo** asignando a la Reach Stacker el traslado de la unidad al sector de **Fosos / Dársenas de Verificación Aduanera**.\n2. **Integridad de Precintos:** Verificar que el precinto PEMA (fiscal) y el precinto naviero coincidan exactamente con el Manifiesto / BL antes de proceder al corte frente al Guarda/Vista de Aduana.\n3. **Cotejo de Tally y Desconsolidado:** Registrar en la app de apuntador (**Tally**) el conteo físico bulto por bulto, marcas y número de serie contra el Permiso de Embarque / Despacho de Importación.\n4. **Registro de Novedades:** Si surgen faltantes, sobrantes o averías, asentar el acta en el sistema y retener el libramiento aduanero hasta el informe final del perito.`
+    }
+  }
+
   if (cleanQ.includes('plazoleta') || cleanQ.includes('stacking') || cleanQ.includes('ocupacion') || cleanQ.includes('teus') || cleanQ.includes('bloque') || cleanQ.includes('organizar') || cleanQ.includes('espacio')) {
     return {
       tipo: 'optimizacion',
@@ -586,7 +593,7 @@ Utiliza formato Markdown (negritas, viñetas, emojis logísticos marítimos 🚢
   if (cleanQ.includes('balanza') || cleanQ.includes('pesaje') || cleanQ.includes('tara') || cleanQ.includes('bruto') || cleanQ.includes('neto') || cleanQ.includes('ticket')) {
     return {
       tipo: 'balanza',
-      respuesta: `⚖️ **Procedimiento de Balanza & Pesaje Fiscal:**\n\n- Todo camión debe registrar su **Pesada 1 (Bruto)** al ingresar por Gate IN.\n- Tras la descarga o estiba en plazoleta, se realiza la **Pesada 2 (Tara)** en Gate OUT para emitir el **Ticket Fiscal** con el peso neto exacto certificado.`
+      respuesta: `⚖️ **Procedimiento de Balanza & Pesaje Fiscal:**\n\n- Todo camión debe registrar su **Pesada 1 (Bruto)** al ingresar por Gate IN.\n- Tras la descarga o estiba en plazoleta, se realiza la **Pesada 2 (Tara)** en Gate OUT para emitir el **Ticket Fiscal** con el peso neto exacto certificado y transmitido a la aduana.`
     }
   }
 
@@ -597,8 +604,22 @@ Utiliza formato Markdown (negritas, viñetas, emojis logísticos marítimos 🚢
     }
   }
 
+  if (cleanQ.includes('ot') || cleanQ.includes('orden') || cleanQ.includes('trabajo') || cleanQ.includes('bajada') || cleanQ.includes('grua') || cleanQ.includes('reach')) {
+    return {
+      tipo: 'operativo',
+      respuesta: `🚜 **Gestión de Órdenes de Trabajo (OTs) de Campo:**\n\n- Las OTs asignan tareas en tiempo real a los operadores de Reach Stacker y apuntadores de campo desde la APK móvil.\n- Tipos de OT soportadas: Bajada a piso para verificación física, consolidado/llenado de contenedor, desconsolidado, posicionamiento en balanza y carga a camión.`
+    }
+  }
+
+  if (cleanQ.includes('tarifa') || cleanQ.includes('factura') || cleanQ.includes('liquidacion') || cleanQ.includes('almacenaje') || cleanQ.includes('cobro')) {
+    return {
+      tipo: 'finanzas',
+      respuesta: `💰 **Tarifarios & Liquidaciones Portuarias:**\n\n- El sistema calcula automáticamente los cargos por **Días de Almacenaje** en plazoleta (libres vs excedentes), movimientos de grúa (Gate IN/OUT, bajada a piso) y pesaje en balanza según el acuerdo tarifario del cliente.`
+    }
+  }
+
   return {
     tipo: 'general',
-    respuesta: `⚓ **Copilot Portuario & Comex:** Sistema operativo conectado y monitoreando la terminal.\nPuedes consultarme sobre optimización de apilado en plazoleta, destare en balanza, OTs de bajada a piso, Tally o prevención de sobreestadías de navieras.`
+    respuesta: `⚓ **Copilot Portuario & Comex:** Sistema operativo conectado y monitoreando la terminal.\nPuedes consultarme sobre optimización de apilado en plazoleta, controles en canal rojo/naranja/verde, destare en balanza, OTs de bajada a piso, Tally o prevención de sobreestadías de navieras.`
   }
 }
