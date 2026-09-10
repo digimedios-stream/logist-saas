@@ -10,35 +10,6 @@ import iconoImg from '@/assets/icono.png'
 const ALL_NAV_ITEMS = [
   { to: '/admin',                icon: 'dashboard',           label: 'Panel Control',   end: true },
   {
-    label: 'Gestión DMS',
-    icon: 'route',
-    type: 'group',
-    items: [
-      { to: '/admin/clientes',       icon: 'business',            label: 'Clientes' },
-      { to: '/admin/entregas',       icon: 'package_2',           label: 'Retiros y Entregas' },
-      { to: '/admin/lineas',         icon: 'route',               label: 'Líneas / Rutas',  modulo: 'lineas' },
-      { to: '/admin/mapa',           icon: 'map',                 label: 'Mapa Rutas' },
-      { to: '/admin/historial',      icon: 'history_toggle_off',  label: 'Historial Viajes' },
-      { to: '/admin/novedades',      icon: 'notifications_active', label: 'Novedades',      modulo: 'novedades' },
-    ]
-  },
-  {
-    label: 'Gestión TMS',
-    icon: 'local_shipping',
-    type: 'group',
-    items: [
-      { to: '/admin/vehiculos',      icon: 'directions_car',      label: 'Flota' },
-      { to: '/admin/choferes',       icon: 'group',               label: 'Choferes' },
-      { to: '/admin/combustible',    icon: 'local_gas_station',   label: 'Combustible',     modulo: 'combustible' },
-      { to: '/admin/mantenimientos', icon: 'build',               label: 'Mantenimientos' },
-      { to: '/admin/mecanicos',      icon: 'engineering',         label: 'Mecánicos',       modulo: 'mecanicos' },
-      { to: '/admin/seguros',        icon: 'shield',              label: 'Seguros',         modulo: 'seguros' },
-      { to: '/admin/vtv',            icon: 'verified',            label: 'VTV / RTO',       modulo: 'vtv' },
-      { to: '/admin/multas',         icon: 'gavel',               label: 'Multas',          modulo: 'multas' },
-      { to: '/admin/documentos',     icon: 'description',         label: 'Documentos',      modulo: 'documentos' },
-    ]
-  },
-  {
     label: 'Terminal & Comex',
     icon: 'anchor',
     type: 'group',
@@ -57,7 +28,38 @@ const ALL_NAV_ITEMS = [
       { to: '/admin/comex/turnos',          icon: 'calendar_month',      label: 'Turnos & Solicitudes' },
     ]
   },
-  { to: '/admin/finanzas',       icon: 'account_balance',     label: 'Finanzas' },
+  {
+    label: 'Gestión TMS',
+    icon: 'local_shipping',
+    type: 'group',
+    modulo: 'tms',
+    items: [
+      { to: '/admin/vehiculos',      icon: 'directions_car',      label: 'Flota' },
+      { to: '/admin/choferes',       icon: 'group',               label: 'Choferes' },
+      { to: '/admin/combustible',    icon: 'local_gas_station',   label: 'Combustible',     modulo: 'combustible' },
+      { to: '/admin/mantenimientos', icon: 'build',               label: 'Mantenimientos' },
+      { to: '/admin/mecanicos',      icon: 'engineering',         label: 'Mecánicos',       modulo: 'mecanicos' },
+      { to: '/admin/seguros',        icon: 'shield',              label: 'Seguros',         modulo: 'seguros' },
+      { to: '/admin/vtv',            icon: 'verified',            label: 'VTV / RTO',       modulo: 'vtv' },
+      { to: '/admin/multas',         icon: 'gavel',               label: 'Multas',          modulo: 'multas' },
+      { to: '/admin/documentos',     icon: 'description',         label: 'Documentos',      modulo: 'documentos' },
+    ]
+  },
+  {
+    label: 'Gestión DMS',
+    icon: 'route',
+    type: 'group',
+    modulo: 'dms',
+    items: [
+      { to: '/admin/clientes',       icon: 'business',            label: 'Clientes' },
+      { to: '/admin/entregas',       icon: 'package_2',           label: 'Retiros y Entregas' },
+      { to: '/admin/lineas',         icon: 'route',               label: 'Líneas / Rutas',  modulo: 'lineas' },
+      { to: '/admin/mapa',           icon: 'map',                 label: 'Mapa Rutas' },
+      { to: '/admin/historial',      icon: 'history_toggle_off',  label: 'Historial Viajes' },
+      { to: '/admin/novedades',      icon: 'notifications_active', label: 'Novedades',      modulo: 'novedades' },
+    ]
+  },
+  { to: '/admin/finanzas',       icon: 'account_balance',     label: 'Finanzas',        modulo: 'finanzas' },
   { to: '/admin/liquidaciones',  icon: 'payments',            label: 'Liquidaciones',   modulo: 'liquidaciones' },
   { to: '/admin/usuarios',       icon: 'manage_accounts',     label: 'Usuarios' },
   { to: '/admin/reportes',       icon: 'analytics',           label: 'Reportes',        modulo: 'reportes' },
@@ -65,10 +67,12 @@ const ALL_NAV_ITEMS = [
 ]
 
 const MOBILE_NAV = [
-  { to: '/admin',           icon: 'dashboard',      label: 'Panel',    end: true },
-  { to: '/admin/clientes',  icon: 'business',       label: 'Clientes' },
-  { to: '/admin/entregas',  icon: 'package_2',      label: 'Entregas' },
-  { to: '/admin/vehiculos', icon: 'local_shipping', label: 'Flota' },
+  { to: '/admin',                 icon: 'dashboard',      label: 'Panel',    end: true },
+  { to: '/admin/comex/plazoleta', icon: 'grid_view',      label: 'Plazoleta', modulo: 'terminal_comex' },
+  { to: '/admin/comex/balanza',   icon: 'scale',          label: 'Balanza',   modulo: 'terminal_comex' },
+  { to: '/admin/clientes',        icon: 'business',       label: 'Clientes',  modulo: 'dms' },
+  { to: '/admin/entregas',        icon: 'package_2',      label: 'Entregas',  modulo: 'dms' },
+  { to: '/admin/vehiculos',       icon: 'local_shipping', label: 'Flota',     modulo: 'tms' },
 ]
 
 export default function AdminLayout() {

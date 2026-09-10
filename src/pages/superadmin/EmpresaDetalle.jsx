@@ -14,6 +14,10 @@ const USER_FORM_INITIAL = { id: '', email: '', password: '', nombre: '', rol: 'c
 
 // Catálogo de todos los módulos disponibles en la plataforma
 const MODULOS_CATALOGO = [
+  { key: 'terminal_comex',icon: 'anchor',            label: 'Terminal Portuaria & Comex', desc: 'Depósito fiscal portuario, Plazoleta de contenedores, Impo/Expo, Balanza, OTs de campo y Tally.' },
+  { key: 'tms',           icon: 'local_shipping',    label: 'Gestión TMS (Flota & Transporte)', desc: 'Control de flota de vehículos, choferes y mantenimientos.' },
+  { key: 'dms',           icon: 'route',             label: 'Gestión DMS (Distribución & Entregas)', desc: 'Gestión de clientes, retiros y entregas de última milla, hojas de ruta e historial.' },
+  { key: 'finanzas',      icon: 'account_balance',   label: 'Finanzas & Facturación', desc: 'Control de ingresos, presupuestos y gastos operativos.' },
   { key: 'combustible',   icon: 'local_gas_station', label: 'Combustible',     desc: 'Registro de cargas de combustible por vehículo y turno.' },
   { key: 'novedades',     icon: 'notifications_active', label: 'Novedades',    desc: 'Reportes de incidentes y novedades operativas.' },
   { key: 'multas',        icon: 'gavel',             label: 'Multas',          desc: 'Gestión de infracciones de tránsito.' },
@@ -24,7 +28,6 @@ const MODULOS_CATALOGO = [
   { key: 'reportes',      icon: 'analytics',         label: 'Reportes',        desc: 'Reportes avanzados y exportación de datos.' },
   { key: 'mecanicos',     icon: 'engineering',       label: 'Mecánicos',       desc: 'Registro de proveedores de mantenimiento.' },
   { key: 'adicionales',   icon: 'local_mall',        label: 'Adicionales',     desc: 'Conceptos adicionales y descuentos por turno.' },
-  { key: 'terminal_comex',icon: 'anchor',            label: 'Terminal Portuaria & Comex', desc: 'Depósito fiscal portuario, Plazoleta de contenedores, Impo/Expo, Balanza, OTs de campo y Tally.' },
   { key: 'logs',          icon: 'history',           label: 'Actividad',       desc: 'Registro de actividad de usuarios en el sistema.' },
 ]
 
