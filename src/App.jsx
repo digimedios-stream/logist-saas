@@ -88,6 +88,14 @@ function LoadingScreen() {
   )
 }
 
+function getDefaultRedirect(userRole) {
+  if (userRole === 'superadmin') return '/superadmin'
+  if (userRole === 'admin') return '/admin'
+  if (userRole === 'operador') return '/operador'
+  if (userRole === 'cliente') return '/portal'
+  return '/chofer'
+}
+
 // ── Protector de ruta autenticada ──────────────────────────────────
 function PrivateRoute({ children, requiredRole }) {
   const { user, userRole, isSuperAdmin, loading } = useAuth()
@@ -96,10 +104,10 @@ function PrivateRoute({ children, requiredRole }) {
   if (!user) return <Navigate to="/login" replace />
 
   if (requiredRole && userRole !== requiredRole) {
-    // SuperAdmin puede acceder a cualquier ruta (soporte, administración, chofer)
+    // SuperAdmin puede acceder a cualquier ruta (soporte, administración, chofer, operador)
     if (isSuperAdmin) {
       // Permitido
-    } else if (userRole === 'admin' && requiredRole === 'chofer') {
+    } else if (userRole === 'admin' && (requiredRole === 'chofer' || requiredRole === 'operador')) {
       // Permitido
     } else if (userRole === null) {
       return (
@@ -112,7 +120,7 @@ function PrivateRoute({ children, requiredRole }) {
         </div>
       )
     } else {
-      return <Navigate to={userRole === 'admin' || userRole === 'superadmin' ? '/admin' : '/chofer'} replace />
+      return <Navigate to={getDefaultRedirect(userRole)} replace />
     }
   }
   return children
@@ -163,7 +171,7 @@ export default function App() {
           path="/"
           element={
             user && userRole
-              ? <Navigate to={userRole === 'superadmin' ? '/superadmin' : userRole === 'admin' ? '/admin' : '/chofer'} replace />
+              ? <Navigate to={getDefaultRedirect(userRole)} replace />
               : <Landing />
           }
         />
@@ -171,7 +179,7 @@ export default function App() {
           path="/login"
           element={
             user && userRole
-              ? <Navigate to={userRole === 'superadmin' ? '/superadmin' : userRole === 'admin' ? '/admin' : '/chofer'} replace />
+              ? <Navigate to={getDefaultRedirect(userRole)} replace />
               : <Landing />
           }
         />
