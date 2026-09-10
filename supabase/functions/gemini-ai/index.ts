@@ -30,8 +30,32 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const geminiModel = Deno.env.get('GEMINI_MODEL') || 'gemini-2.5-flash';
-    const cleanModel = geminiModel.replace(/^models\//, '');
+    const userModel = (Deno.env.get('GEMINI_MODEL') || 'gemini-1.5-flash').replace(/^models\//, '');
+    const candidateModels = Array.from(new Set([userModel, 'gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-1.5-pro', 'gemini-2.5-flash']));
+
+    async function callGeminiApi(payload: any) {
+      let lastErr = null;
+      for (const model of candidateModels) {
+        try {
+          const res = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload),
+            }
+          );
+          if (res.ok) {
+            return await res.json();
+          }
+          const errText = await res.text();
+          lastErr = new Error(`Gemini API Error (${model}): ${errText}`);
+        } catch (e: any) {
+          lastErr = e;
+        }
+      }
+      throw lastErr;
+    }
 
     const body = await req.json();
     const { action } = body;
@@ -113,27 +137,14 @@ Devuelve EXCLUSIVAMENTE un objeto JSON válido con la siguiente estructura:
         ];
       }
 
-      const geminiRes = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${cleanModel}:generateContent?key=${geminiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents,
-            generationConfig: {
-              response_mime_type: 'application/json',
-              temperature: 0.1,
-            },
-          }),
-        }
-      );
+      const geminiData = await callGeminiApi({
+        contents,
+        generationConfig: {
+          response_mime_type: 'application/json',
+          temperature: 0.1,
+        },
+      });
 
-      if (!geminiRes.ok) {
-        const errText = await geminiRes.text();
-        throw new Error(`Gemini API Error: ${errText}`);
-      }
-
-      const geminiData = await geminiRes.json();
       const rawText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
       const parsed = rawText ? JSON.parse(rawText) : {};
 
@@ -146,46 +157,33 @@ Devuelve EXCLUSIVAMENTE un objeto JSON válido con la siguiente estructura:
     if (action === 'consultar-copiloto') {
       const { pregunta, contextoOperativo } = body;
 
-      const geminiRes = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${cleanModel}:generateContent?key=${geminiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            system_instruction: {
-              parts: [
-                {
-                  text: `Eres el Asistente Copilot Oficial de Comercio Exterior, Terminal Portuaria y Depósito Fiscal de la plataforma 'Logist'.
+      const geminiData = await callGeminiApi({
+        system_instruction: {
+          parts: [
+            {
+              text: `Eres el Asistente Copilot Oficial de Comercio Exterior, Terminal Portuaria y Depósito Fiscal de la plataforma 'Logist'.
 Eres un especialista en operativa portuaria (TEUs, Stacking en plazoleta, pesaje en balanza/destare, Órdenes de Trabajo OT, Tally/Pretally de desconsolidado, control de días libres/detention de navieras y canal aduanero Malvina).
 Responde de forma concisa, profesional, ejecutiva y en español a las consultas del operador o administrador.
 Utiliza formato Markdown (negritas, viñetas, emojis logísticos marítimos 🚢 ⚓ 📦 🏗️).`,
-                },
-              ],
             },
-            contents: [
+          ],
+        },
+        contents: [
+          {
+            role: 'user',
+            parts: [
               {
-                role: 'user',
-                parts: [
-                  {
-                    text: `Contexto Operativo Actual de la Terminal:\n${JSON.stringify(contextoOperativo, null, 2)}\n\nPregunta del Administrador/Operador: "${pregunta}"`,
-                  },
-                ],
+                text: `Contexto Operativo Actual de la Terminal:\n${JSON.stringify(contextoOperativo, null, 2)}\n\nPregunta del Administrador/Operador: "${pregunta}"`,
               },
             ],
-            generationConfig: {
-              temperature: 0.3,
-              maxOutputTokens: 600,
-            },
-          }),
-        }
-      );
+          },
+        ],
+        generationConfig: {
+          temperature: 0.3,
+          maxOutputTokens: 600,
+        },
+      });
 
-      if (!geminiRes.ok) {
-        const errText = await geminiRes.text();
-        throw new Error(`Gemini API Error: ${errText}`);
-      }
-
-      const geminiData = await geminiRes.json();
       const respuestaTexto = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
       return new Response(JSON.stringify({ respuesta: respuestaTexto }), {
