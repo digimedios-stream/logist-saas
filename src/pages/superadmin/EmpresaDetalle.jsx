@@ -24,8 +24,7 @@ const MODULOS_CATALOGO = [
   { key: 'reportes',      icon: 'analytics',         label: 'Reportes',        desc: 'Reportes avanzados y exportación de datos.' },
   { key: 'mecanicos',     icon: 'engineering',       label: 'Mecánicos',       desc: 'Registro de proveedores de mantenimiento.' },
   { key: 'adicionales',   icon: 'local_mall',        label: 'Adicionales',     desc: 'Conceptos adicionales y descuentos por turno.' },
-  { key: 'lineas',        icon: 'route',             label: 'Líneas / Rutas',  desc: 'Configuración de líneas y rutas operativas.' },
-  { key: 'courier_fiscal',icon: 'warehouse',         label: 'Courier & Depósito Fiscal', desc: 'WMS aduanero, control de bultos, optimizador y asistente de IA.' },
+  { key: 'terminal_comex',icon: 'anchor',            label: 'Terminal Portuaria & Comex', desc: 'Depósito fiscal portuario, Plazoleta de contenedores, Impo/Expo, Balanza, OTs de campo y Tally.' },
   { key: 'logs',          icon: 'history',           label: 'Actividad',       desc: 'Registro de actividad de usuarios en el sistema.' },
 ]
 

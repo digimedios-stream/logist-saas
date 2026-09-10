@@ -1,0 +1,122 @@
+# PROMPT PARA CREACIÓN DE SISTEMA DE GESTIÓN LOGÍSTICA Y COMERCIO EXTERIOR
+
+## OBJETIVO DEL SISTEMA
+Desarrollar una solución integral de gestión logística digital y comercio exterior para la administración, trazabilidad y control de operaciones de importación, exportación, depósito fiscal y consolidado/desconsolidado en transporte terrestre, aéreo y marítimo, compatible con cargas a granel, refrigeradas y peligrosas.
+
+---
+
+## 1. ARQUITECTURA E INTERFACES DE USUARIO
+- **Panel Web de Gestión:** Interfaz administrativa central para la planificación, asignación y seguimiento de órdenes de trabajo (OT), control de stock, supervisión de balanza y liquidaciones.
+- **Aplicación Móvil (Smartphone / Handheld):** App móvil para operadores de campo que permite:
+  - Ejecución y actualización en tiempo real de órdenes de trabajo (OT).
+  - Carga de novedades operativas directamente desde el terreno para evitar errores de tipeo.
+  - Geolocalización de actividades y movimientos de carga.
+  - Toma de datos de ingreso (Gate IN), registro de daños y capturas fotográficas.
+- **Portal Web de Autogestión para Clientes:** Plataforma autoservicio para clientes importadores/exportadores:
+  - Registro y reserva autónoma de turnos con validación de horarios disponibles.
+  - Control de reservas limitado por volumen y tipo de envase.
+  - Solicitudes autónomas de retiro o traslado de mercadería sin requerir llamadas o correos electrónicos.
+  - Seguimiento y trazabilidad en tiempo real del estado de sus operaciones y cargas.
+  - Gestión de contenedores almacén y visualización del porcentaje de ocupación.
+- **Tecnología e IoT:**
+  - Integración con dispositivos IoT y tecnología PEMA (lectura automática de precintos para evitar duplicidad de datos).
+  - Dashboards y Business Intelligence (BI) personalizables para análisis de indicadores y reportes a medida.
+
+---
+
+## 2. MÓDULOS OPERATIVOS Y FLUJOS DE TRABAJO
+
+### A. Módulo de Importaciones
+- Coordinación de retiros y asignación de viajes.
+- Control de arribo, posicionamiento de contenedores/camiones e ingreso a planta/plazoleta.
+- Registro de datos de transporte (chofer, camión, acoplado/semi).
+- Validación de inspecciones y control operativo en plazoleta/terminal.
+- Ingreso y actualización automática del stock de importación.
+
+### B. Módulo de Exportaciones
+- Coordinación, ejecución y asignación de viajes de exportación.
+- Preingreso de mercadería y documentación (registro de permisos, BL/Booking, exportador, destinatario).
+- Arribo, posicionamiento, traslado de contenedores e ingreso al stock.
+- Pesada y destare en balanza con registro de peso.
+- Órdenes de Trabajo (OT) para bajada a piso, reubicación en plazoleta y registro de cambios de estado.
+
+### C. Consolidado y Desconsolidado
+- **Consolidado:**
+  - Edición y preparación de mercadería.
+  - Generación y ejecución de Órdenes de Trabajo (OT).
+  - Impresión de comprobantes operativos.
+  - Gestiones de liberación y desistimiento aduanero.
+  - Autorización de retiro desde stock camiones.
+  - Asignación de viajes, OT de carga de contenedor consolidado y egreso de camión cargado.
+- **Desconsolidado Optimizado:**
+  - Control de Pretally y Tally (registro de apuntador, tipo de bulto, envase, peso, volumen, precintos y jaulas/ubicaciones).
+  - Priorización, asignación y ejecución de Órdenes de Trabajo.
+  - Validación de OT e ingreso final a stock desconsolidado.
+
+### D. Gestión de Devolución de Contenedores Vacíos
+- Carga y monitoreo de fechas de vencimiento y depósito/destino de devolución.
+- Asignación de viajes considerando turno y empresa transportista.
+- Generación de OT para carga de contenedor vacío y retiro del predio.
+- Actualización y baja automática del stock.
+
+### E. Gestión de Contenedores Almacén
+- Control detallado de stock de contenedores almacén categorizados por estado (vacío/cargado), capacidad, tipo (20 DC, 40 HC, etc.) y porcentaje de ocupación.
+- Mapeo y visualización de ubicaciones físicas de contenedores almacén en el predio.
+- Registro de movimientos vía App Móvil o Web:
+  - Ingreso y devolución.
+  - Traslados internos entre depósitos.
+  - Movimientos y entregas a clientes.
+- Operaciones de consolidado y desconsolidado directo en contenedores almacén con generación automática de OT para reasignación de ubicaciones.
+
+---
+
+## 3. GESTIÓN DE TRANSPORTE Y LIQUIDACIÓN DE VIAJES
+- **ABM de Transporte:**
+  - Registro integral de empresas transportistas (CUIT, razón social, fecha de alta).
+  - Registro de choferes (DNI, nombre, transportista asociado).
+  - Alta y control de vehículos (tractores y acoplados/semis).
+- **Control de Flota y Balanza:**
+  - Control de autorización de salida de vehículos.
+  - Asignación de viajes por unidad y egreso verificado por balanza.
+- **Acuerdos Tarifarios Configurables:**
+  - Definición de reglas y cálculo automático de costos de viajes según variables:
+    - Zonas y terminales de origen/destino.
+    - Tipo y capacidad de unidad / contenedor.
+    - Estado del contenedor (vacío/cargado).
+    - Tipo de carga e insumos adicionales.
+- **Liquidación de Viajes:**
+  - Registro y validación de viajes finalizados.
+  - Generación automática de preliquidaciones con desglose detallado.
+  - Filtros avanzados de consulta por rango de fechas y empresas transportistas para optimizar la facturación.
+
+---
+
+## 4. FACTURACIÓN Y FINANZAS
+- **Acuerdos Tarifarios Comerciales:**
+  - Configuración de modelos de cotización por tipo de operación (impo, expo, servicios).
+  - Alta de esquemas tarifarios por cliente, modelo de servicio y período de vigencia.
+- **Gestión de Facturación Operativa:**
+  - Panel con listado de pendientes de facturación.
+  - Facturación directa sobre eventos de stock.
+  - Facturación de servicios no vinculados a una Orden de Pasaje (OP) fiscal.
+  - Trazabilidad e historial de eventos facturados consultables por número de Bill of Lading (BL) o Booking.
+
+---
+
+## 5. INTEGRACIONES SISTÉMICAS Y REGULATORIAS
+- **Sistemas Aduaneros (Sistema Malvina):**
+  - Obtención automática de datos completos del manifiesto de carga para la generación automática de Órdenes de Trabajo.
+  - Transmisión y carga automática en el Sistema Malvina de datos operativos obtenidos en plazoleta/terminal.
+- **Facturación Electrónica (Web Service ARCA):**
+  - Integración mediante Web Services para la emisión automática de Facturas Electrónicas.
+- **Seguridad y Trazabilidad (PEMA):**
+  - Captura y validación automática de datos de precintos de seguridad para evitar la duplicidad de digitación.
+- **Sistemas ERP y Contables:**
+  - Interfaces de integración con ERPs externos para clientes que requieran centralizar la facturación en su propio sistema contable.
+
+---
+
+## 6. REQUERIMIENTOS TÉCNICOS Y REGLAS DE NEGOCIO
+- **Trazabilidad y Cero Re-tipeo:** La arquitectura debe evitar la duplicación de datos mediante integraciones automáticas entre módulos, App móvil e IoT.
+- **Generación Automática de OT:** Cada cambio de estado, movimiento de depósito o solicitud debe gatillar automáticamente las Órdenes de Trabajo correspondientes para los operadores.
+- **Seguridad y Auditoría:** Historial completo de cambios de estado, responsable, fecha y hora geolocalizada para cada evento operativo.

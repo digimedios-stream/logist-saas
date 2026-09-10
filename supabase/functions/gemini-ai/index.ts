@@ -49,9 +49,9 @@ Deno.serve(async (req: Request) => {
     const body = await req.json();
     const { action } = body;
 
-    // ── ACCIÓN 1: ANALIZAR DOCUMENTO ADUANERO (PDF / IMAGEN) ─────────
+    // ── ACCIÓN 1: ANALIZAR DOCUMENTO ADUANERO / COMEX (BL, BOOKING, MALVINA, TALLY, PACKING LIST) ─────────
     if (action === 'analizar-documento') {
-      const { base64Data, mimeType = 'application/pdf', tipoDoc = 'AWB' } = body;
+      const { base64Data, mimeType = 'application/pdf', tipoDoc = 'BL / Bill of Lading' } = body;
 
       let contents = [];
       if (base64Data) {
@@ -66,32 +66,48 @@ Deno.serve(async (req: Request) => {
                 },
               },
               {
-                text: `Eres un perito experto en despacho aduanero y logística internacional de comercio exterior.
-Analiza este documento aduanero (${tipoDoc}) y extrae los datos con máxima precisión técnica.
+                text: `Eres un perito experto en despacho aduanero, logística portuaria y comercio exterior internacional (Sistema Malvina / AFIP / ARCA / IMO / Port Terminal).
+Analiza este documento aduanero (${tipoDoc}) y extrae los datos con la máxima precisión técnica y cero error de tipeo.
 
 Devuelve EXCLUSIVAMENTE un objeto JSON válido con la siguiente estructura:
 {
-  "numero_documento": "string (ej: AWB-784-9382)",
   "tipo_documento": "${tipoDoc}",
-  "pais_origen": "string con nombre y código de país (ej: China (CN))",
-  "aduana_ingreso": "string (ej: Aduana Ezeiza / Terminal 1)",
+  "bl_booking": "string (número de BL, Booking o Manifiesto)",
+  "nro_operacion": "string sugerido",
+  "vapor": "string (nombre del buque / vapor)",
+  "viaje_buque": "string (nro de viaje)",
+  "aduana_codigo": "string (ej: 001 - PTO BS AS / MALVINA-073)",
+  "consignatario": "string (empresa receptora o importador)",
+  "exportador": "string (empresa remitente / shipper)",
   "canal_sugerido": "verde" | "naranja" | "rojo",
-  "fecha_arribo_estimada": "ISO Date string",
-  "resumen_declaracion": "string descriptivo con partida arancelaria y tipo de carga",
+  "permiso_embarque": "string o null",
+  "fecha_arribo_estimada": "ISO Date string o null",
+  "resumen_mercaderia": "string descripción técnica de la carga",
   "total_bultos": number,
-  "peso_total_kg": number,
-  "valor_cif_usd": number,
-  "paquetes_detectados": [
+  "peso_bruto_kg": number,
+  "volumen_m3": number,
+  "contenedores": [
     {
-      "descripcion": "string nombre detallado del ítem",
-      "peso_kg": number,
-      "valor_declarado_usd": number,
-      "alto_cm": number,
-      "ancho_cm": number,
-      "largo_cm": number
+      "numero_contenedor": "string (ej: MSCU1234567)",
+      "tipo": "20DC" | "40DC" | "40HC" | "20REEFER" | "40REEFER" | "OPEN_TOP" | "FLAT_RACK" | "GRANEL" | "PELIGROSA_IMO",
+      "estado_carga": "cargado" | "vacio",
+      "precinto_pema": "string o null",
+      "precinto_naviera": "string o null",
+      "naviera": "string (ej: Maersk, MSC, Hapag-Lloyd, etc.)",
+      "temperatura_setpoint": number o null,
+      "clase_imo": "string o null"
     }
   ],
-  "alertas_cumplimiento": ["string observaciones aduaneras o precintos"]
+  "items_tally_sugeridos": [
+    {
+      "descripcion": "string detalle del ítem",
+      "tipo_envase": "pallet" | "caja" | "tambor" | "bolsa" | "jaula" | "granel" | "otro",
+      "cantidad": number,
+      "peso_kg": number,
+      "volumen_m3": number
+    }
+  ],
+  "alertas_aduaneras": ["string lista de observaciones, precintos o restricciones"]
 }`,
               },
             ],
@@ -103,7 +119,7 @@ Devuelve EXCLUSIVAMENTE un objeto JSON válido con la siguiente estructura:
             role: 'user',
             parts: [
               {
-                text: `Genera una extracción estructurada para un documento aduanero tipo ${tipoDoc} con datos de importación realistas en formato JSON estándar.`,
+                text: `Genera una extracción estructurada para un documento aduanero tipo ${tipoDoc} con datos de comercio exterior realistas (BL/Booking, buque, contenedores 20/40, precintos, pesos) en formato JSON.`,
               },
             ],
           },
@@ -139,7 +155,7 @@ Devuelve EXCLUSIVAMENTE un objeto JSON válido con la siguiente estructura:
       });
     }
 
-    // ── ACCIÓN 2: CONSULTAR COPILOTO INTELIGENTE ───────────────────────
+    // ── ACCIÓN 2: CONSULTAR COPILOTO COMEX & TERMINAL PORTUARIA ────────
     if (action === 'consultar-copiloto') {
       const { pregunta, contextoOperativo } = body;
 
@@ -152,9 +168,10 @@ Devuelve EXCLUSIVAMENTE un objeto JSON válido con la siguiente estructura:
             system_instruction: {
               parts: [
                 {
-                  text: `Eres el Asistente Oficial Copilot de IA de la plataforma 'Logist' (WMS, Depósitos Fiscales y Courier).
-Responde de forma concisa, profesional, ejecutiva y en español a las consultas del operador o administrador logístico.
-Utiliza formato Markdown (negritas, viñetas, emojis logísticos). Si te preguntan por sobrestadía, analiza los días de ingreso respecto a los 5 días libres del depósito.`,
+                  text: `Eres el Asistente Copilot Oficial de Comercio Exterior, Terminal Portuaria y Depósito Fiscal de la plataforma 'Logist'.
+Eres un especialista en operativa portuaria (TEUs, Stacking en plazoleta, pesaje en balanza/destare, Órdenes de Trabajo OT, Tally/Pretally de desconsolidado, control de días libres/detention de navieras y canal aduanero Malvina).
+Responde de forma concisa, profesional, ejecutiva y en español a las consultas del operador o administrador.
+Utiliza formato Markdown (negritas, viñetas, emojis logísticos marítimos 🚢 ⚓ 📦 🏗️).`,
                 },
               ],
             },
@@ -163,7 +180,7 @@ Utiliza formato Markdown (negritas, viñetas, emojis logísticos). Si te pregunt
                 role: 'user',
                 parts: [
                   {
-                    text: `Contexto Operativo Actual de la Empresa:\n${JSON.stringify(contextoOperativo, null, 2)}\n\nPregunta del Operador: "${pregunta}"`,
+                    text: `Contexto Operativo Actual de la Terminal:\n${JSON.stringify(contextoOperativo, null, 2)}\n\nPregunta del Administrador/Operador: "${pregunta}"`,
                   },
                 ],
               },

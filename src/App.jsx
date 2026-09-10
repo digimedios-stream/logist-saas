@@ -41,11 +41,22 @@ import Finanzas from '@/pages/admin/Finanzas'
 import PresupuestoForm from '@/pages/admin/PresupuestoForm'
 import GestionEntregas from '@/pages/admin/GestionEntregas'
 
-// Módulo Courier & Depósito Fiscal
-import DepositoFiscal from '@/pages/admin/courier/DepositoFiscal'
-import GestionPaquetes from '@/pages/admin/courier/GestionPaquetes'
-import ManifiestosAduana from '@/pages/admin/courier/ManifiestosAduana'
-import OptimizadorRutas from '@/pages/admin/courier/OptimizadorRutas'
+// Módulo Terminal Portuaria & Comercio Exterior
+import DashboardComex from '@/pages/admin/comex/DashboardComex'
+import Importaciones from '@/pages/admin/comex/Importaciones'
+import Exportaciones from '@/pages/admin/comex/Exportaciones'
+import PlazoletaContenedores from '@/pages/admin/comex/PlazoletaContenedores'
+import BalanzaPesaje from '@/pages/admin/comex/BalanzaPesaje'
+import ConsolidadoDesconsolidado from '@/pages/admin/comex/ConsolidadoDesconsolidado'
+import DevolucionVacios from '@/pages/admin/comex/DevolucionVacios'
+import OrdenesTrabajo from '@/pages/admin/comex/OrdenesTrabajo'
+import TarifariosLiquidaciones from '@/pages/admin/comex/TarifariosLiquidaciones'
+import FacturacionComex from '@/pages/admin/comex/FacturacionComex'
+import TurnosSolicitudes from '@/pages/admin/comex/TurnosSolicitudes'
+
+// App Móvil Operador y Portal Clientes
+import OperadorFieldApp from '@/pages/operador/OperadorFieldApp'
+import PortalClientes from '@/pages/portal/PortalClientes'
 
 // Chofer Pages
 import ChoferDashboard from '@/pages/chofer/Dashboard'
@@ -221,12 +232,23 @@ export default function App() {
           <Route path="documentos"    element={<ModuleRoute modulo="documentos"><Documentos /></ModuleRoute>} />
           <Route path="novedades"     element={<ModuleRoute modulo="novedades"><AdminNovedades /></ModuleRoute>} />
 
-          {/* Módulo Courier & Depósito Fiscal */}
-          <Route path="deposito-fiscal"       element={<ModuleRoute modulo="courier_fiscal"><DepositoFiscal /></ModuleRoute>} />
-          <Route path="courier-paquetes"      element={<ModuleRoute modulo="courier_fiscal"><GestionPaquetes /></ModuleRoute>} />
-          <Route path="manifiestos-aduaneros" element={<ModuleRoute modulo="courier_fiscal"><ManifiestosAduana /></ModuleRoute>} />
-          <Route path="optimizador-courier"   element={<ModuleRoute modulo="courier_fiscal"><OptimizadorRutas /></ModuleRoute>} />
+          {/* Módulo Terminal Portuaria & Comercio Exterior */}
+          <Route path="comex/dashboard"       element={<ModuleRoute modulo="terminal_comex"><DashboardComex /></ModuleRoute>} />
+          <Route path="comex/importaciones"   element={<ModuleRoute modulo="terminal_comex"><Importaciones /></ModuleRoute>} />
+          <Route path="comex/exportaciones"   element={<ModuleRoute modulo="terminal_comex"><Exportaciones /></ModuleRoute>} />
+          <Route path="comex/plazoleta"       element={<ModuleRoute modulo="terminal_comex"><PlazoletaContenedores /></ModuleRoute>} />
+          <Route path="comex/balanza"         element={<ModuleRoute modulo="terminal_comex"><BalanzaPesaje /></ModuleRoute>} />
+          <Route path="comex/tally"           element={<ModuleRoute modulo="terminal_comex"><ConsolidadoDesconsolidado /></ModuleRoute>} />
+          <Route path="comex/vacios"          element={<ModuleRoute modulo="terminal_comex"><DevolucionVacios /></ModuleRoute>} />
+          <Route path="comex/ordenes-trabajo" element={<ModuleRoute modulo="terminal_comex"><OrdenesTrabajo /></ModuleRoute>} />
+          <Route path="comex/tarifarios"      element={<ModuleRoute modulo="terminal_comex"><TarifariosLiquidaciones /></ModuleRoute>} />
+          <Route path="comex/facturacion"     element={<ModuleRoute modulo="terminal_comex"><FacturacionComex /></ModuleRoute>} />
+          <Route path="comex/turnos"          element={<ModuleRoute modulo="terminal_comex"><TurnosSolicitudes /></ModuleRoute>} />
         </Route>
+
+        {/* ── Rutas Móvil Operador y Portal Clientes ─────────── */}
+        <Route path="/operador" element={<OperadorFieldApp />} />
+        <Route path="/portal" element={<PortalClientes />} />
 
         {/* ── Rutas Chofer ────────────────────────────────────── */}
         <Route
