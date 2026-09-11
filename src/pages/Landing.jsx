@@ -32,7 +32,9 @@ export default function Landing() {
     if (user && userRole) {
       if (userRole === 'superadmin') navigate('/superadmin')
       else if (userRole === 'admin') navigate('/admin')
+      else if (userRole === 'operador') navigate('/operador')
       else if (userRole === 'chofer') navigate('/chofer')
+      else if (userRole === 'cliente') navigate('/portal')
     }
   }, [user, userRole, navigate])
 
@@ -671,25 +673,37 @@ export default function Landing() {
               <p className="text-slate-400 text-xs mt-1">Seleccioná tu tipo de cuenta para ingresar</p>
             </div>
 
-            {/* Selector de Pestaña (Empresa vs Chofer) */}
-            <div className="flex gap-2 mb-6 border-b border-slate-800">
+            {/* Selector de Pestaña (Empresa vs Operador vs Chofer) */}
+            <div className="grid grid-cols-3 gap-1.5 mb-6 p-1 bg-slate-950/80 border border-slate-800 rounded-xl">
               <button
+                type="button"
                 onClick={() => setModalTab('empresa')}
-                className={`flex-1 pb-3 font-bold text-xs uppercase tracking-wider transition-all border-b-2 ${modalTab === 'empresa'
-                  ? 'text-cyan-400 border-cyan-400 font-extrabold'
-                  : 'text-slate-400 border-transparent hover:text-white'
+                className={`py-2 px-1 text-center font-bold text-[10px] sm:text-xs uppercase tracking-wider rounded-lg transition-all ${modalTab === 'empresa'
+                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm font-extrabold'
+                  : 'text-slate-400 hover:text-white'
                   }`}
               >
-                Empresa / Admin
+                Admin
               </button>
               <button
-                onClick={() => setModalTab('chofer')}
-                className={`flex-1 pb-3 font-bold text-xs uppercase tracking-wider transition-all border-b-2 ${modalTab === 'chofer'
-                  ? 'text-emerald-400 border-emerald-400 font-extrabold'
-                  : 'text-slate-400 border-transparent hover:text-white'
+                type="button"
+                onClick={() => setModalTab('operador')}
+                className={`py-2 px-1 text-center font-bold text-[10px] sm:text-xs uppercase tracking-wider rounded-lg transition-all ${modalTab === 'operador'
+                  ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40 shadow-sm font-extrabold'
+                  : 'text-slate-400 hover:text-white'
                   }`}
               >
-                Chofer / Conductor
+                ⚓ Operador
+              </button>
+              <button
+                type="button"
+                onClick={() => setModalTab('chofer')}
+                className={`py-2 px-1 text-center font-bold text-[10px] sm:text-xs uppercase tracking-wider rounded-lg transition-all ${modalTab === 'chofer'
+                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-sm font-extrabold'
+                  : 'text-slate-400 hover:text-white'
+                  }`}
+              >
+                🚛 Chofer
               </button>
             </div>
 
@@ -704,18 +718,28 @@ export default function Landing() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
-                  {modalTab === 'empresa' ? 'Email Corporativo' : 'Usuario / Email del Chofer'}
+                  {modalTab === 'empresa'
+                    ? 'Email Corporativo Admin'
+                    : modalTab === 'operador'
+                    ? 'Email del Operador Portuario / Campo'
+                    : 'Usuario / Email del Chofer'}
                 </label>
                 <div className="relative">
                   <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-lg">
-                    {modalTab === 'empresa' ? 'badge' : 'person'}
+                    {modalTab === 'empresa' ? 'badge' : modalTab === 'operador' ? 'anchor' : 'local_shipping'}
                   </span>
                   <input
                     type="email"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder={modalTab === 'empresa' ? 'admin@empresa.com' : 'chofer@empresa.com'}
+                    placeholder={
+                      modalTab === 'empresa'
+                        ? 'admin@empresa.com'
+                        : modalTab === 'operador'
+                        ? 'juangarcia@movix.com'
+                        : 'chofer@empresa.com'
+                    }
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 pl-10 pr-4 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all font-mono"
                   />
                 </div>
