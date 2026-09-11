@@ -250,3 +250,22 @@
     filter: brightness(0.65) invert(1) contrast(2.8) hue-rotate(205deg) saturate(0.25) brightness(0.85);
   }
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   MOBILE & CAPACITOR OPTIMIZATIONS (0ms touch latency & 60fps rendering)
+   ───────────────────────────────────────────────────────────────────────────── */
+html, body {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  overscroll-behavior-y: none;
+}
+
+button, a, input, select, textarea {
+  touch-action: manipulation;
+}
+
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
