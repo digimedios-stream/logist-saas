@@ -50,8 +50,8 @@ Deno.serve(async (req) => {
       })
     }
 
-    if (!['admin', 'chofer'].includes(rol)) {
-      return new Response(JSON.stringify({ error: 'Rol inválido. Usar: admin o chofer' }), {
+    if (!['admin', 'operador', 'chofer', 'cliente'].includes(rol)) {
+      return new Response(JSON.stringify({ error: 'Rol inválido. Usar: admin, operador, chofer o cliente' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }

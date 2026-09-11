@@ -164,7 +164,8 @@ export default function EmpresaDetalle() {
     setUserError('')
     try {
       const action = isEditingUser ? 'update' : 'create'
-      const { data, error } = await supabase.functions.invoke('admin-usuarios', {
+      
+      let res = await supabase.functions.invoke('admin-usuarios', {
         body: {
           action: action,
           userId: userForm.id,
@@ -177,15 +178,42 @@ export default function EmpresaDetalle() {
         }
       })
 
-      if (error) throw error
-      if (data?.error) throw new Error(data.error)
+      if (res.error && action === 'create') {
+        // Fallback secundario a crear-usuario-empresa
+        const resFallback = await supabase.functions.invoke('crear-usuario-empresa', {
+          body: {
+            email: userForm.email.trim(),
+            password: userForm.password,
+            nombre: userForm.nombre.trim(),
+            empresa_id: id,
+            rol: userForm.rol
+          }
+        })
+        if (!resFallback.error && resFallback.data?.success) {
+          res = resFallback
+        }
+      }
+
+      if (res.error) {
+        let errMsg = res.error.message
+        try {
+          if (res.error.context) {
+            const json = await res.error.context.json()
+            if (json?.error) errMsg = json.error
+          }
+        } catch (_) {}
+        throw new Error(errMsg)
+      }
+
+      if (res.data?.error) throw new Error(res.data.error)
 
       setShowUserModal(false)
       setUserForm(USER_FORM_INITIAL)
       setIsEditingUser(false)
       await cargarEmpresa() // Recargar para ver el nuevo usuario
     } catch (err) {
-      setUserError(err.message)
+      console.error('Error guardando usuario:', err)
+      setUserError(err.message || 'Error al guardar el usuario.')
     } finally {
       setSavingUser(false)
     }

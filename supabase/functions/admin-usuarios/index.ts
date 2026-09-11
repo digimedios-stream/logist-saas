@@ -30,11 +30,27 @@ Deno.serve(async (req) => {
       auth: { persistSession: false },
     })
 
-    // Comprobar que sea superadmin (ahora solo ellos pueden gestionar usuarios)
-    const { data: esSuperAdmin, error: rpcError } = await userClient.rpc('is_superadmin')
+    // Comprobar si es superadmin o admin de la empresa
+    const { data: esSuperAdmin } = await userClient.rpc('is_superadmin')
     
-    if (rpcError || !esSuperAdmin) {
-      return new Response(JSON.stringify({ error: 'Acceso denegado: se requiere rol de Superadministrador.' }), {
+    let tienePermiso = !!esSuperAdmin
+    if (!tienePermiso) {
+      const { data: { user } } = await userClient.auth.getUser()
+      if (user) {
+        const { data: userRole } = await adminClient
+          .from('user_roles')
+          .select('rol, empresa_id')
+          .eq('user_id', user.id)
+          .eq('activo', true)
+          .maybeSingle()
+        if (userRole && (userRole.rol === 'superadmin' || (userRole.rol === 'admin' && userRole.empresa_id === body?.empresa_id))) {
+          tienePermiso = true
+        }
+      }
+    }
+
+    if (!tienePermiso) {
+      return new Response(JSON.stringify({ error: 'Acceso denegado: se requiere rol de Administrador o Superadministrador.' }), {
         status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
@@ -48,7 +64,7 @@ Deno.serve(async (req) => {
 
     if (action === 'create') {
       if (!email || !password || !nombre || !rol) {
-        return new Response(JSON.stringify({ error: 'Faltan campos requeridos.' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        return new Response(JSON.stringify({ error: 'Faltan campos requeridos (email, contraseña, nombre y rol).' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
       }
 
       // 1. Crear en Auth
