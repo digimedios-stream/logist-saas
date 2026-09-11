@@ -1,5 +1,13 @@
 {
   "appId": "com.logistica.lazdin",
   "appName": "Movix",
-  "webDir": "dist"
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https",
+    "cleartext": true
+  },
+  "android": {
+    "allowMixedContent": true,
+    "webContentsDebuggingEnabled": false
+  }
 }

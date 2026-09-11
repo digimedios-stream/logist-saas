@@ -19,14 +19,23 @@
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
     <script>
+      // En entorno móvil nativo (Capacitor), deshabilitar el SW para evitar retrasos de 3s en peticiones locales
+      const isCapacitor = window.Capacitor !== undefined || 
+                          window.location.protocol === 'capacitor:' || 
+                          window.location.protocol === 'http:' && window.location.hostname === 'localhost' && window.location.port === '';
+      
       if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').then(reg => {
-            console.log('SW registrado con éxito:', reg.scope);
-          }).catch(err => {
-            console.log('Fallo al registrar SW:', err);
+        if (isCapacitor) {
+          navigator.serviceWorker.getRegistrations().then(function(registrations) {
+            for (let registration of registrations) {
+              registration.unregister();
+            }
           });
-        });
+        } else {
+          window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js').catch(() => {});
+          });
+        }
       }
     </script>
   </body>
