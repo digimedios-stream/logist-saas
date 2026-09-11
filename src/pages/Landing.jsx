@@ -57,13 +57,13 @@ export default function Landing() {
   }
 
   return (
-    <div className="dark min-h-screen bg-[#0B0F19] text-[#e5e2e2] font-sans relative overflow-x-hidden selection:bg-lazdin-emerald selection:text-black">
+    <div className="dark min-h-screen bg-[#111322] text-[#e5e2e2] font-sans relative overflow-x-hidden selection:bg-lazdin-emerald selection:text-black">
 
       {/* Dynamic Particles Background */}
       <ParticlesBg />
 
       {/* HEADER STICKY */}
-      <header className="sticky top-0 w-full z-40 bg-[#0B0F19]/85 backdrop-blur-xl border-b border-white/10 shadow-[0_0_20px_rgba(6,182,212,0.08)]">
+      <header className="sticky top-0 w-full z-40 bg-[#111322]/85 backdrop-blur-xl border-b border-white/10 shadow-[0_0_20px_rgba(6,182,212,0.08)]">
         <div className="flex justify-between items-center px-6 lg:px-12 py-4 max-w-[1440px] mx-auto">
           <div className="flex items-center gap-3">
             <img src={logoImg} alt="MOVIX Logo" className="h-14 w-auto object-contain" />
