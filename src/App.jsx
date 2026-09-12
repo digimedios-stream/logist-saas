@@ -64,9 +64,9 @@ import RentabilidadFlota from '@/pages/admin/erp/RentabilidadFlota'
 
 // Módulo Courier & Paquetería
 import GestionPaquetes from '@/pages/admin/courier/GestionPaquetes'
-import DepositoFiscal from '@/pages/admin/courier/DepositoFiscal'
-import ManifiestosAduana from '@/pages/admin/courier/ManifiestosAduana'
+import HubClasificacion from '@/pages/admin/courier/HubClasificacion'
 import OptimizadorRutas from '@/pages/admin/courier/OptimizadorRutas'
+import CobranzasCOD from '@/pages/admin/courier/CobranzasCOD'
 
 // App Móvil Operador y Portal Clientes
 import OperadorFieldApp from '@/pages/operador/OperadorFieldApp'
@@ -277,9 +277,9 @@ export default function App() {
 
           {/* Módulo Courier & Envíos */}
           <Route path="courier/paquetes"      element={<ModuleRoute modulo="courier"><GestionPaquetes /></ModuleRoute>} />
-          <Route path="courier/deposito"      element={<ModuleRoute modulo="courier"><DepositoFiscal /></ModuleRoute>} />
-          <Route path="courier/manifiestos"   element={<ModuleRoute modulo="courier"><ManifiestosAduana /></ModuleRoute>} />
+          <Route path="courier/clasificacion" element={<ModuleRoute modulo="courier"><HubClasificacion /></ModuleRoute>} />
           <Route path="courier/rutas"         element={<ModuleRoute modulo="courier"><OptimizadorRutas /></ModuleRoute>} />
+          <Route path="courier/cobranzas"     element={<ModuleRoute modulo="courier"><CobranzasCOD /></ModuleRoute>} />
         </Route>
 
         {/* ── Rutas Móvil Operador y Portal Clientes ─────────── */}

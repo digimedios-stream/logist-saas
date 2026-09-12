@@ -29,10 +29,10 @@ const ALL_NAV_ITEMS = [
     type: 'group',
     modulo: 'courier',
     items: [
-      { to: '/admin/courier/paquetes',     icon: 'package_2',        label: 'Gestión Paquetes' },
-      { to: '/admin/courier/deposito',     icon: 'warehouse',        label: 'Depósito Fiscal' },
-      { to: '/admin/courier/manifiestos',  icon: 'assignment',       label: 'Manifiestos Aduana' },
-      { to: '/admin/courier/rutas',        icon: 'route',            label: 'Optimización Rutas' },
+      { to: '/admin/courier/paquetes',      icon: 'package_2',        label: 'Gestión Paquetes & AWB' },
+      { to: '/admin/courier/clasificacion', icon: 'warehouse',        label: 'Hub & Clasificación' },
+      { to: '/admin/courier/rutas',         icon: 'route',            label: 'Optimización Rutas' },
+      { to: '/admin/courier/cobranzas',     icon: 'payments',         label: 'Cobranzas (COD)' },
     ]
   },
   {
