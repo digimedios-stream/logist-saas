@@ -10,6 +10,32 @@ import iconoImg from '@/assets/icono.png'
 const ALL_NAV_ITEMS = [
   { to: '/admin',                icon: 'dashboard',           label: 'Panel Control',   end: true },
   {
+    label: 'Gestión ERP',
+    icon: 'account_balance_wallet',
+    type: 'group',
+    modulo: 'erp',
+    items: [
+      { to: '/admin/erp/dashboard',     icon: 'dashboard',           label: 'Tablero ERP & P&L' },
+      { to: '/admin/erp/ventas',        icon: 'receipt_long',        label: 'Ventas & Facturación' },
+      { to: '/admin/erp/compras',       icon: 'shopping_bag',        label: 'Compras & Proveedores' },
+      { to: '/admin/erp/inventario',    icon: 'inventory_2',         label: 'Inventario & Stock' },
+      { to: '/admin/erp/tesoreria',     icon: 'payments',            label: 'Cajas & Bancos' },
+      { to: '/admin/erp/rentabilidad',  icon: 'query_stats',         label: 'Rentabilidad Flota' },
+    ]
+  },
+  {
+    label: 'Courier & Envíos',
+    icon: 'local_shipping',
+    type: 'group',
+    modulo: 'courier',
+    items: [
+      { to: '/admin/courier/paquetes',     icon: 'package_2',        label: 'Gestión Paquetes' },
+      { to: '/admin/courier/deposito',     icon: 'warehouse',        label: 'Depósito Fiscal' },
+      { to: '/admin/courier/manifiestos',  icon: 'assignment',       label: 'Manifiestos Aduana' },
+      { to: '/admin/courier/rutas',        icon: 'route',            label: 'Optimización Rutas' },
+    ]
+  },
+  {
     label: 'Terminal & Comex',
     icon: 'anchor',
     type: 'group',
@@ -68,6 +94,7 @@ const ALL_NAV_ITEMS = [
 
 const MOBILE_NAV = [
   { to: '/admin',                 icon: 'dashboard',      label: 'Panel',    end: true },
+  { to: '/admin/erp/dashboard',   icon: 'account_balance_wallet', label: 'ERP', modulo: 'erp' },
   { to: '/admin/comex/plazoleta', icon: 'grid_view',      label: 'Plazoleta', modulo: 'terminal_comex' },
   { to: '/admin/comex/balanza',   icon: 'scale',          label: 'Balanza',   modulo: 'terminal_comex' },
   { to: '/admin/clientes',        icon: 'business',       label: 'Clientes',  modulo: 'dms' },

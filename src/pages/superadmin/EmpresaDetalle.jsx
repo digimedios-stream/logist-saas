@@ -23,10 +23,12 @@ const USER_FORM_INITIAL = { id: '', email: '', password: '', nombre: '', rol: 'o
 
 // Catálogo de todos los módulos disponibles en la plataforma
 const MODULOS_CATALOGO = [
+  { key: 'erp',           icon: 'account_balance_wallet', label: 'Gestión ERP & Finanzas', desc: 'Suite ERP: Ventas, Facturas AR, Compras AP, Inventario/WMS de repuestos, Tesorería y P&L.' },
+  { key: 'courier',       icon: 'package_2',         label: 'Courier & Paquetería',    desc: 'Gestión de bultos/guías, depósito fiscal aéreo/terrestre, manifiestos de aduana y optimización.' },
   { key: 'terminal_comex',icon: 'anchor',            label: 'Terminal Portuaria & Comex', desc: 'Depósito fiscal portuario, Plazoleta de contenedores, Impo/Expo, Balanza, OTs de campo y Tally.' },
   { key: 'tms',           icon: 'local_shipping',    label: 'Gestión TMS (Flota & Transporte)', desc: 'Control de flota de vehículos, choferes y mantenimientos.' },
   { key: 'dms',           icon: 'route',             label: 'Gestión DMS (Distribución & Entregas)', desc: 'Gestión de clientes, retiros y entregas de última milla, hojas de ruta e historial.' },
-  { key: 'finanzas',      icon: 'account_balance',   label: 'Finanzas & Facturación', desc: 'Control de ingresos, presupuestos y gastos operativos.' },
+  { key: 'finanzas',      icon: 'account_balance',   label: 'Finanzas & Presupuestos', desc: 'Control de cotizaciones y presupuestos a clientes.' },
   { key: 'combustible',   icon: 'local_gas_station', label: 'Combustible',     desc: 'Registro de cargas de combustible por vehículo y turno.' },
   { key: 'novedades',     icon: 'notifications_active', label: 'Novedades',    desc: 'Reportes de incidentes y novedades operativas.' },
   { key: 'multas',        icon: 'gavel',             label: 'Multas',          desc: 'Gestión de infracciones de tránsito.' },

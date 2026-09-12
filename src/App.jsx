@@ -54,6 +54,20 @@ import TarifariosLiquidaciones from '@/pages/admin/comex/TarifariosLiquidaciones
 import FacturacionComex from '@/pages/admin/comex/FacturacionComex'
 import TurnosSolicitudes from '@/pages/admin/comex/TurnosSolicitudes'
 
+// Módulo ERP Integral
+import DashboardERP from '@/pages/admin/erp/DashboardERP'
+import FacturacionVentas from '@/pages/admin/erp/FacturacionVentas'
+import ComprasProveedores from '@/pages/admin/erp/ComprasProveedores'
+import InventarioStock from '@/pages/admin/erp/InventarioStock'
+import TesoreriaCajas from '@/pages/admin/erp/TesoreriaCajas'
+import RentabilidadFlota from '@/pages/admin/erp/RentabilidadFlota'
+
+// Módulo Courier & Paquetería
+import GestionPaquetes from '@/pages/admin/courier/GestionPaquetes'
+import DepositoFiscal from '@/pages/admin/courier/DepositoFiscal'
+import ManifiestosAduana from '@/pages/admin/courier/ManifiestosAduana'
+import OptimizadorRutas from '@/pages/admin/courier/OptimizadorRutas'
+
 // App Móvil Operador y Portal Clientes
 import OperadorFieldApp from '@/pages/operador/OperadorFieldApp'
 import PortalClientes from '@/pages/portal/PortalClientes'
@@ -252,6 +266,20 @@ export default function App() {
           <Route path="comex/tarifarios"      element={<ModuleRoute modulo="terminal_comex"><TarifariosLiquidaciones /></ModuleRoute>} />
           <Route path="comex/facturacion"     element={<ModuleRoute modulo="terminal_comex"><FacturacionComex /></ModuleRoute>} />
           <Route path="comex/turnos"          element={<ModuleRoute modulo="terminal_comex"><TurnosSolicitudes /></ModuleRoute>} />
+
+          {/* Módulo ERP Integral */}
+          <Route path="erp/dashboard"         element={<ModuleRoute modulo="erp"><DashboardERP /></ModuleRoute>} />
+          <Route path="erp/ventas"            element={<ModuleRoute modulo="erp"><FacturacionVentas /></ModuleRoute>} />
+          <Route path="erp/compras"           element={<ModuleRoute modulo="erp"><ComprasProveedores /></ModuleRoute>} />
+          <Route path="erp/inventario"        element={<ModuleRoute modulo="erp"><InventarioStock /></ModuleRoute>} />
+          <Route path="erp/tesoreria"         element={<ModuleRoute modulo="erp"><TesoreriaCajas /></ModuleRoute>} />
+          <Route path="erp/rentabilidad"      element={<ModuleRoute modulo="erp"><RentabilidadFlota /></ModuleRoute>} />
+
+          {/* Módulo Courier & Envíos */}
+          <Route path="courier/paquetes"      element={<ModuleRoute modulo="courier"><GestionPaquetes /></ModuleRoute>} />
+          <Route path="courier/deposito"      element={<ModuleRoute modulo="courier"><DepositoFiscal /></ModuleRoute>} />
+          <Route path="courier/manifiestos"   element={<ModuleRoute modulo="courier"><ManifiestosAduana /></ModuleRoute>} />
+          <Route path="courier/rutas"         element={<ModuleRoute modulo="courier"><OptimizadorRutas /></ModuleRoute>} />
         </Route>
 
         {/* ── Rutas Móvil Operador y Portal Clientes ─────────── */}
